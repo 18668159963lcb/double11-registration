@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026双11大会 · 大客商家参会登记</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --primary: #1677FF;
+  --primary-light: #E6F4FF;
+  --success: #52C41A;
+  --warning: #FAAD14;
+  --danger: #FF4D4F;
+  --bg: #F5F7FA;
+  --card-radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: #333;
+  min-height: 100vh;
+}
+.card {
+  background: #fff;
+  border-radius: var(--card-radius);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all .2s;
+}
+.btn-primary:hover { background: #4096FF; }
+.btn-primary:disabled { background: #BFBFBF; cursor: not-allowed; }
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .2s;
+}
+.btn-danger:hover { background: #FF7875; }
+.btn-outline {
+  background: #fff;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .2s;
+}
+.btn-outline:hover { background: var(--primary-light); }
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+}
+.form-label .required { color: var(--danger); margin-left: 2px; }
+.form-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #D9D9D9;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s;
+  font-family: inherit;
+}
+.form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+.form-input.error { border-color: var(--danger); }
+.error-msg { color: var(--danger); font-size: 12px; margin-top: 4px; display: none; }
+.error-msg.show { display: block; }
+
+/* Tag select */
+.tag-select { position: relative; }
+.tag-select-box {
+  min-height: 42px;
+  border: 1px solid #D9D9D9;
+  border-radius: 8px;
+  padding: 4px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.tag-select-box:focus-within, .tag-select-box.open { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  gap: 4px;
+}
+.tag-item .tag-close { cursor: pointer; font-size: 14px; line-height: 1; }
+.tag-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #D9D9D9;
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.tag-dropdown.show { display: block; }
+.tag-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background .15s;
+}
+.tag-option:hover { background: #F5F5F5; }
+.tag-option.selected { background: var(--primary-light); color: var(--primary); }
+
+/* Searchable select */
+.search-select { position: relative; }
+.search-select-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #D9D9D9;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s;
+  font-family: inherit;
+}
+.search-select-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+.search-select-input.error { border-color: var(--danger); }
+.search-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #D9D9D9;
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.search-select-dropdown.show { display: block; }
+.search-select-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.search-select-option:hover { background: #F5F5F5; }
+.search-select-option.active { background: var(--primary-light); color: var(--primary); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  z-index: 10000;
+  transition: transform .3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.warning { background: var(--warning); color: #333; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* Session tags colors */
+.session-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  margin: 1px;
+  white-space: nowrap;
+}
+.session-tag-0 { background: #E6F4FF; color: #1677FF; }
+.session-tag-1 { background: #FFF7E6; color: #FA8C16; }
+.session-tag-2 { background: #F6FFED; color: #52C41A; }
+.session-tag-3 { background: #FFF1F0; color: #FF4D4F; }
+.session-tag-4 { background: #F9F0FF; color: #722ED1; }
+.session-tag-5 { background: #E6FFFB; color: #13C2C2; }
+
+/* Tabs */
+.tab-btn {
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.tab-btn:hover { color: var(--primary); }
+
+/* Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-slider {
+  position: absolute;
+  inset: 0;
+  background: #ccc;
+  border-radius: 26px;
+  cursor: pointer;
+  transition: .3s;
+}
+.switch-slider:before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: .3s;
+}
+.switch input:checked + .switch-slider { background: var(--success); }
+.switch input:checked + .switch-slider:before { transform: translateX(22px); }
+
+/* Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  background: #FAFAFA;
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #F0F0F0;
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #F0F0F0;
+  vertical-align: middle;
+}
+.data-table tr:hover { background: #FAFAFA; }
+
+/* KPI cards */
+.kpi-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  text-align: center;
+}
+.kpi-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+.kpi-label { font-size: 13px; color: #999; margin-top: 4px; }
+
+/* Banner */
+.closed-banner {
+  background: #FFF1F0;
+  border: 1px solid #FFA39E;
+  color: var(--danger);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Pagination */
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid #D9D9D9;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .2s;
+  font-family: inherit;
+}
+.page-btn:hover { border-color: var(--primary); color: var(--primary); }
+.page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.page-btn:disabled { color: #D9D9D9; cursor: not-allowed; }
+
+/* Admin layout */
+.admin-nav {
+  background: #fff;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+/* Record card */
+.record-card {
+  border: 1px solid #F0F0F0;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: box-shadow .2s;
+}
+.record-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+/* Confirm dialog */
+.confirm-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.confirm-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+@media (max-width: 768px) {
+  .card { padding: 16px; }
+  .admin-nav { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+  .tab-btn { padding: 8px 12px; font-size: 13px; }
+  .kpi-card { padding: 14px; }
+  .kpi-value { font-size: 22px; }
+  .data-table { font-size: 12px; }
+  .data-table th, .data-table td { padding: 6px 4px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+// ====================== PROVINCE/CITY DATA ======================
+const REGION_DATA = {
+  "北京市": ["北京市"],
+  "上海市": ["上海市"],
+  "天津市": ["天津市"],
+  "重庆市": ["重庆市"],
+  "河北省": ["石家庄", "唐山", "秦皇岛", "邯郸", "保定", "廊坊", "沧州", "邢台", "衡水", "张家口", "承德"],
+  "山西省": ["太原", "大同", "临汾", "运城", "晋中", "长治", "忻州", "吕梁", "朔州", "阳泉", "晋城"],
+  "辽宁省": ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"],
+  "吉林省": ["长春", "吉林", "四平", "辽源", "通化", "白山", "松原", "白城", "延边"],
+  "黑龙江省": ["哈尔滨", "齐齐哈尔", "牡丹江", "佳木斯", "大庆", "鸡西", "双鸭山", "伊春", "七台河", "鹤岗", "绥化", "黑河", "大兴安岭"],
+  "江苏省": ["南京", "苏州", "无锡", "常州", "徐州", "南通", "连云港", "淮安", "盐城", "扬州", "镇江", "泰州", "宿迁"],
+  "浙江省": ["杭州", "宁波", "温州", "嘉兴", "湖州", "绍兴", "金华", "衢州", "舟山", "台州", "丽水"],
+  "安徽省": ["合肥", "芜湖", "蚌埠", "淮南", "马鞍山", "淮北", "铜陵", "安庆", "黄山", "滁州", "阜阳", "宿州", "六安", "亳州", "池州", "宣城"],
+  "福建省": ["福州", "厦门", "莆田", "三明", "泉州", "漳州", "南平", "龙岩", "宁德"],
+  "江西省": ["南昌", "景德镇", "萍乡", "九江", "新余", "鹰潭", "赣州", "吉安", "宜春", "抚州", "上饶"],
+  "山东省": ["济南", "青岛", "淄博", "枣庄", "东营", "烟台", "潍坊", "济宁", "泰安", "威海", "日照", "临沂", "德州", "聊城", "滨州", "菏泽"],
+  "河南省": ["郑州", "开封", "洛阳", "平顶山", "安阳", "鹤壁", "新乡", "焦作", "濮阳", "许昌", "漯河", "三门峡", "南阳", "商丘", "信阳", "周口", "驻马店", "济源"],
+  "湖北省": ["武汉", "黄石", "十堰", "宜昌", "襄阳", "鄂州", "荆门", "孝感", "荆州", "黄冈", "咸宁", "随州", "恩施"],
+  "湖南省": ["长沙", "株洲", "湘潭", "衡阳", "邵阳", "岳阳", "常德", "张家界", "益阳", "郴州", "永州", "怀化", "娄底", "湘西"],
+  "广东省": ["广州", "深圳", "珠海", "汕头", "韶关", "佛山", "江门", "湛江", "茂名", "肇庆", "惠州", "梅州", "汕尾", "河源", "阳江", "清远", "东莞", "中山", "潮州", "揭阳", "云浮"],
+  "海南省": ["海口", "三亚", "儋州", "琼海", "文昌", "万宁", "东方", "五指山"],
+  "四川省": ["成都", "绵阳", "自贡", "攀枝花", "泸州", "德阳", "广元", "遂宁", "内江", "乐山", "南充", "眉山", "宜宾", "广安", "达州", "雅安", "巴中", "资阳", "阿坝", "甘孜", "凉山"],
+  "贵州省": ["贵阳", "六盘水", "遵义", "安顺", "毕节", "铜仁", "黔西南", "黔东南", "黔南"],
+  "云南省": ["昆明", "曲靖", "玉溪", "保山", "昭通", "丽江", "普洱", "临沧", "楚雄", "红河", "文山", "西双版纳", "大理", "德宏", "怒江", "迪庆"],
+  "陕西省": ["西安", "铜川", "宝鸡", "咸阳", "渭南", "延安", "汉中", "榆林", "安康", "商洛"],
+  "甘肃省": ["兰州", "嘉峪关", "金昌", "白银", "天水", "武威", "张掖", "平凉", "酒泉", "庆阳", "定西", "陇南", "临夏", "甘南"],
+  "青海省": ["西宁", "海东", "海北", "黄南", "海南", "果洛", "玉树", "海西"],
+  "台湾省": ["台北", "高雄", "台中", "台南", "新北", "桃园", "基隆", "新竹", "嘉义"],
+  "内蒙古自治区": ["呼和浩特", "包头", "乌海", "赤峰", "通辽", "鄂尔多斯", "呼伦贝尔", "巴彦淖尔", "乌兰察布", "兴安", "锡林郭勒", "阿拉善"],
+  "广西壮族自治区": ["南宁", "柳州", "桂林", "梧州", "北海", "防城港", "钦州", "贵港", "玉林", "百色", "贺州", "河池", "来宾", "崇左"],
+  "西藏自治区": ["拉萨", "日喀则", "昌都", "林芝", "山南", "那曲", "阿里"],
+  "宁夏回族自治区": ["银川", "石嘴山", "吴忠", "固原", "中卫"],
+  "新疆维吾尔自治区": ["乌鲁木齐", "克拉玛依", "吐鲁番", "哈密", "昌吉", "博尔塔拉", "巴音郭楞", "阿克苏", "克孜勒苏", "喀什", "和田", "伊犁", "塔城", "阿勒泰"],
+  "香港特别行政区": ["香港"],
+  "澳门特别行政区": ["澳门"]
+};
+
+const PROVINCES = Object.keys(REGION_DATA);
+
+// ====================== SESSION OPTIONS ======================
+const SESSION_OPTIONS = [
+  "天猫服饰主会场 9/15 9:30",
+  "女装会场 9/15 14:00",
+  "男装会场 9/16 9:30",
+  "内衣会场 9/15 14:00",
+  "箱包服配场 9/16 9:30",
+  "男女鞋场 9/15 14:00"
+];
+
+// ====================== STORAGE KEYS ======================
+const STORAGE_RECORDS = "reg_records";
+const STORAGE_CONFIG = "reg_config";
+
+// ====================== UTILS ======================
+function getConfig() {
+  try {
+    const c = JSON.parse(localStorage.getItem(STORAGE_CONFIG));
+    return c || { isClosed: false, password: "shuang11admin" };
+  } catch { return { isClosed: false, password: "shuang11admin" }; }
+}
+function saveConfig(cfg) { localStorage.setItem(STORAGE_CONFIG, JSON.stringify(cfg)); }
+
+function getRecords() {
+  try {
+    const r = JSON.parse(localStorage.getItem(STORAGE_RECORDS));
+    return Array.isArray(r) ? r : [];
+  } catch { return []; }
+}
+function saveRecords(records) { localStorage.setItem(STORAGE_RECORDS, JSON.stringify(records)); }
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function showToast(msg, type = 'success', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  requestAnimationFrame(() => { toast.classList.add('show'); });
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+function showConfirm(title, msg, onOk, onCancel) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-dialog';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">${title}</div>
+      <div style="color:#666;font-size:14px;margin-bottom:20px;">${msg}</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-outline" id="confirm-cancel">取消</button>
+        <button class="btn-primary" id="confirm-ok" style="padding:8px 20px;">确定</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#confirm-ok').onclick = () => { overlay.remove(); onOk && onOk(); };
+  overlay.querySelector('#confirm-cancel').onclick = () => { overlay.remove(); onCancel && onCancel(); };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); onCancel && onCancel(); } });
+}
+
+function showPrompt(title, msg, placeholder, onOk) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-dialog';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">${title}</div>
+      <div style="color:#666;font-size:14px;margin-bottom:12px;">${msg}</div>
+      <input type="password" class="form-input" id="prompt-input" placeholder="${placeholder || ''}" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-outline" id="prompt-cancel">取消</button>
+        <button class="btn-primary" id="prompt-ok" style="padding:8px 20px;">确定</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const inp = overlay.querySelector('#prompt-input');
+  inp.focus();
+  overlay.querySelector('#prompt-ok').onclick = () => { const v = inp.value; overlay.remove(); onOk && onOk(v); };
+  overlay.querySelector('#prompt-cancel').onclick = () => { overlay.remove(); };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ====================== ROUTER ======================
+function getRoute() {
+  const hash = window.location.hash || '#/';
+  if (hash.startsWith('#/admin')) return 'admin';
+  return 'home';
+}
+
+function navigate(route) {
+  window.location.hash = route;
+}
+
+// ====================== SEARCHABLE SELECT COMPONENT ======================
+function createSearchSelect(container, options, placeholder, onSelect, allowSearch) {
+  container.classList.add('search-select');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'search-select-input';
+  input.placeholder = placeholder;
+  input.autocomplete = 'off';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'search-select-dropdown';
+
+  let currentOptions = [...options];
+  let selectedValue = '';
+
+  function renderOptions(filter) {
+    const f = (filter || '').trim();
+    const filtered = f ? currentOptions.filter(o => o.includes(f)) : currentOptions;
+    dropdown.innerHTML = '';
+    if (filtered.length === 0) {
+      dropdown.innerHTML = '<div style="padding:8px 12px;color:#999;font-size:13px;">无匹配选项</div>';
+    } else {
+      filtered.forEach(opt => {
+        const div = document.createElement('div');
+        div.className = 'search-select-option' + (opt === selectedValue ? ' active' : '');
+        div.textContent = opt;
+        div.addEventListener('click', () => {
+          selectedValue = opt;
+          input.value = opt;
+          dropdown.classList.remove('show');
+          onSelect && onSelect(opt);
+        });
+        dropdown.appendChild(div);
+      });
+    }
+  }
+
+  input.addEventListener('focus', () => {
+    renderOptions(input.value === selectedValue ? '' : input.value);
+    dropdown.classList.add('show');
+  });
+
+  input.addEventListener('input', () => {
+    renderOptions(input.value);
+    dropdown.classList.add('show');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target)) dropdown.classList.remove('show');
+  });
+
+  container.appendChild(input);
+  container.appendChild(dropdown);
+
+  return {
+    getValue: () => selectedValue,
+    setValue: (v) => { selectedValue = v; input.value = v; },
+    setOptions: (opts) => { currentOptions = [...opts]; renderOptions(''); },
+    clear: () => { selectedValue = ''; input.value = ''; },
+    input: input
+  };
+}
+
+// ====================== TAG SELECT COMPONENT ======================
+function createTagSelect(container, options) {
+  container.classList.add('tag-select');
+  const box = document.createElement('div');
+  box.className = 'tag-select-box';
+  const placeholder = document.createElement('span');
+  placeholder.style.cssText = 'color:#BFBFBF;font-size:14px;';
+  placeholder.textContent = '请选择参会场次（可多选）';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'tag-dropdown';
+
+  let selected = [];
+
+  function render() {
+    box.innerHTML = '';
+    if (selected.length === 0) {
+      box.appendChild(placeholder);
+    } else {
+      selected.forEach((val, idx) => {
+        const tag = document.createElement('span');
+        tag.className = `tag-item session-tag-${SESSION_OPTIONS.indexOf(val) % 6}`;
+        tag.innerHTML = `${val} <span class="tag-close" data-idx="${idx}">&times;</span>`;
+        box.appendChild(tag);
+      });
+    }
+    dropdown.innerHTML = '';
+    options.forEach(opt => {
+      const div = document.createElement('div');
+      div.className = 'tag-option' + (selected.includes(opt) ? ' selected' : '');
+      div.textContent = (selected.includes(opt) ? '\u2713 ' : '') + opt;
+      div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selected.includes(opt)) {
+          selected = selected.filter(s => s !== opt);
+        } else {
+          selected.push(opt);
+        }
+        render();
+      });
+      dropdown.appendChild(div);
+    });
+  }
+
+  box.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tag-close')) {
+      const idx = parseInt(e.target.dataset.idx);
+      selected.splice(idx, 1);
+      render();
+      e.stopPropagation();
+      return;
+    }
+    dropdown.classList.toggle('show');
+    box.classList.toggle('open');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target)) {
+      dropdown.classList.remove('show');
+      box.classList.remove('open');
+    }
+  });
+
+  container.appendChild(box);
+  container.appendChild(dropdown);
+  render();
+
+  return {
+    getValue: () => [...selected],
+    setValue: (vals) => { selected = [...vals]; render(); },
+    clear: () => { selected = []; render(); },
+    box: box
+  };
+}
+
+// ====================== FORM PAGE ======================
+let editingRecordId = null;
+
+function renderForm() {
+  const config = getConfig();
+  const records = getRecords().sort((a, b) => b.createdAt - a.createdAt);
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div style="max-width:640px;margin:0 auto;padding:16px;">
+      <div style="text-align:center;margin-bottom:24px;padding-top:24px;">
+        <h1 style="font-size:22px;font-weight:700;color:#333;margin-bottom:8px;">2026双11大会 &middot; 大客商家参会登记</h1>
+        <p style="font-size:14px;color:#999;">请如实填写以下信息，每个商家可登记多位参会嘉宾</p>
+      </div>
+
+      ${config.isClosed ? '<div class="closed-banner"><i class="fas fa-exclamation-circle"></i> 报名已截止，如有疑问请联系对接小二</div>' : ''}
+
+      <div class="card" id="form-card">
+        <form id="reg-form" novalidate>
+          <div style="margin-bottom:16px;">
+            <label class="form-label">商家名称<span class="required">*</span></label>
+            <input type="text" class="form-input" id="f-merchant" placeholder="请输入商家名称" ${config.isClosed ? 'disabled' : ''}>
+            <div class="error-msg" id="e-merchant"></div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label class="form-label">嘉宾姓名<span class="required">*</span></label>
+            <input type="text" class="form-input" id="f-guest" placeholder="请输入嘉宾姓名" ${config.isClosed ? 'disabled' : ''}>
+            <div class="error-msg" id="e-guest"></div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label class="form-label">嘉宾Title<span class="required">*</span></label>
+            <input type="text" class="form-input" id="f-title" placeholder="请输入嘉宾Title/职位" ${config.isClosed ? 'disabled' : ''}>
+            <div class="error-msg" id="e-title"></div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label class="form-label">对接小二<span class="required">*</span></label>
+            <input type="text" class="form-input" id="f-xiaoer" placeholder="请输入对接小二花名" ${config.isClosed ? 'disabled' : ''}>
+            <div class="error-msg" id="e-xiaoer"></div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label class="form-label">来源省<span class="required">*</span></label>
+            <div id="f-province-wrap"></div>
+            <div class="error-msg" id="e-province"></div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label class="form-label">来源市<span class="required">*</span></label>
+            <div id="f-city-wrap"></div>
+            <div class="error-msg" id="e-city"></div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label class="form-label">手机号<span class="required">*</span></label>
+            <input type="text" class="form-input" id="f-phone" placeholder="请输入11位手机号" maxlength="11" ${config.isClosed ? 'disabled' : ''}>
+            <div class="error-msg" id="e-phone"></div>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <label class="form-label">参会场次<span class="required">*</span></label>
+            <div id="f-sessions-wrap"></div>
+            <div class="error-msg" id="e-sessions"></div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="submit-btn" style="width:100%;font-size:16px;padding:12px;" ${config.isClosed ? 'disabled' : ''}>
+            ${editingRecordId ? '<i class="fas fa-save"></i> 更新' : '<i class="fas fa-paper-plane"></i> 提交登记'}
+          </button>
+          ${editingRecordId ? '<button type="button" class="btn-outline" id="cancel-edit-btn" style="width:100%;margin-top:8px;">取消编辑</button>' : ''}
+        </form>
+      </div>
+
+      <div style="margin-top:24px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+        <h2 style="font-size:16px;font-weight:600;"><i class="fas fa-list-ul"></i> 我的登记记录</h2>
+        <span style="font-size:13px;color:#999;">共 ${records.length} 条</span>
+      </div>
+
+      <div id="records-list">
+        ${records.length === 0 ? '<div class="card" style="text-align:center;color:#999;padding:40px 20px;"><i class="fas fa-inbox" style="font-size:32px;margin-bottom:12px;display:block;"></i>暂无登记记录，请填写上方表单</div>' : ''}
+      </div>
+
+      <div style="text-align:center;padding:24px 0;">
+        <a href="#/admin" style="color:#999;font-size:12px;text-decoration:none;">管理后台 &rarr;</a>
+      </div>
+    </div>
+  `;
+
+  // Init components
+  let provinceSelect, citySelect, sessionSelect;
+
+  provinceSelect = createSearchSelect(
+    document.getElementById('f-province-wrap'),
+    PROVINCES,
+    '请选择省份',
+    (province) => {
+      const cities = REGION_DATA[province] || [];
+      citySelect.setOptions(cities);
+      citySelect.clear();
+    },
+    true
+  );
+
+  citySelect = createSearchSelect(
+    document.getElementById('f-city-wrap'),
+    [],
+    '请先选择省份',
+    () => {},
+    true
+  );
+
+  sessionSelect = createTagSelect(
+    document.getElementById('f-sessions-wrap'),
+    SESSION_OPTIONS
+  );
+
+  if (config.isClosed) {
+    provinceSelect.input.disabled = true;
+    citySelect.input.disabled = true;
+  }
+
+  // Store references for form operations
+  window._formRefs = { provinceSelect, citySelect, sessionSelect };
+
+  // Restore kept values
+  const keptMerchant = sessionStorage.getItem('_keep_merchant') || '';
+  const keptXiaoer = sessionStorage.getItem('_keep_xiaoer') || '';
+  if (keptMerchant) document.getElementById('f-merchant').value = keptMerchant;
+  if (keptXiaoer) document.getElementById('f-xiaoer').value = keptXiaoer;
+  sessionStorage.removeItem('_keep_merchant');
+  sessionStorage.removeItem('_keep_xiaoer');
+
+  // If editing, fill form
+  if (editingRecordId) {
+    const rec = records.find(r => r.id === editingRecordId);
+    if (rec) {
+      document.getElementById('f-merchant').value = rec.merchant || '';
+      document.getElementById('f-guest').value = rec.guestName || '';
+      document.getElementById('f-title').value = rec.guestTitle || '';
+      document.getElementById('f-xiaoer').value = rec.xiaoer || '';
+      provinceSelect.setValue(rec.province || '');
+      const cities = REGION_DATA[rec.province] || [];
+      citySelect.setOptions(cities);
+      citySelect.setValue(rec.city || '');
+      document.getElementById('f-phone').value = rec.phone || '';
+      sessionSelect.setValue(rec.sessions || []);
+    }
+  }
+
+  // Cancel edit
+  const cancelBtn = document.getElementById('cancel-edit-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      editingRecordId = null;
+      renderForm();
+    });
+  }
+
+  // Form submit
+  document.getElementById('reg-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (config.isClosed) return;
+
+    // Validate
+    let valid = true;
+
+    const merchant = document.getElementById('f-merchant').value.trim();
+    const guest = document.getElementById('f-guest').value.trim();
+    const title = document.getElementById('f-title').value.trim();
+    const xiaoer = document.getElementById('f-xiaoer').value.trim();
+    const province = provinceSelect.getValue();
+    const city = citySelect.getValue();
+    const phone = document.getElementById('f-phone').value.trim();
+    const sessions = sessionSelect.getValue();
+
+    // Clear errors
+    document.querySelectorAll('.error-msg').forEach(el => { el.classList.remove('show'); el.textContent = ''; });
+    document.querySelectorAll('.form-input').forEach(el => el.classList.remove('error'));
+    sessionSelect.box.classList.remove('error');
+    provinceSelect.input.classList.remove('error');
+    citySelect.input.classList.remove('error');
+
+    function setError(fieldId, msg) {
+      valid = false;
+      const el = document.getElementById(fieldId);
+      if (el) { el.textContent = msg; el.classList.add('show'); }
+    }
+
+    if (!merchant || merchant.length < 2) {
+      setError('e-merchant', '商家名称至少2个字符');
+      document.getElementById('f-merchant').classList.add('error');
+    }
+    if (!guest || guest.length < 2) {
+      setError('e-guest', '嘉宾姓名至少2个字符');
+      document.getElementById('f-guest').classList.add('error');
+    }
+    if (!title) {
+      setError('e-title', '请输入嘉宾Title');
+      document.getElementById('f-title').classList.add('error');
+    }
+    if (!xiaoer) {
+      setError('e-xiaoer', '请输入对接小二');
+      document.getElementById('f-xiaoer').classList.add('error');
+    }
+    if (!province) {
+      setError('e-province', '请选择来源省');
+      provinceSelect.input.classList.add('error');
+    }
+    if (!city) {
+      setError('e-city', '请选择来源市');
+      citySelect.input.classList.add('error');
+    }
+    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+      setError('e-phone', '请输入正确的11位手机号');
+      document.getElementById('f-phone').classList.add('error');
+    }
+    if (sessions.length === 0) {
+      setError('e-sessions', '请至少选择一个参会场次');
+      sessionSelect.box.style.borderColor = 'var(--danger)';
+    }
+
+    if (!valid) return;
+
+    const allRecords = getRecords();
+
+    if (editingRecordId) {
+      // Update
+      const idx = allRecords.findIndex(r => r.id === editingRecordId);
+      if (idx >= 0) {
+        allRecords[idx] = {
+          ...allRecords[idx],
+          merchant, guestName: guest, guestTitle: title, xiaoer,
+          province, city, phone, sessions,
+          updatedAt: Date.now()
+        };
+        saveRecords(allRecords);
+      }
+      editingRecordId = null;
+      showToast('记录已更新！', 'success');
+    } else {
+      // Add
+      const record = {
+        id: genId(),
+        merchant, guestName: guest, guestTitle: title, xiaoer,
+        province, city, phone, sessions,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      allRecords.push(record);
+      saveRecords(allRecords);
+
+      const totalGuests = allRecords.filter(r => r.merchant === merchant).length;
+      showToast(`提交成功！您已登记 ${totalGuests} 位参会嘉宾`, 'success');
+    }
+
+    // Keep merchant & xiaoer
+    sessionStorage.setItem('_keep_merchant', merchant);
+    sessionStorage.setItem('_keep_xiaoer', xiaoer);
+
+    renderForm();
+  });
+
+  // Render records
+  const listEl = document.getElementById('records-list');
+  if (records.length > 0) {
+    listEl.innerHTML = records.map(rec => `
+      <div class="record-card card" style="padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">${escHtml(rec.guestName)}</div>
+            <div style="font-size:12px;color:#999;margin-top:2px;">${escHtml(rec.merchant)} &middot; ${escHtml(rec.guestTitle)}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-outline edit-rec-btn" data-id="${rec.id}" style="padding:4px 10px;font-size:12px;"><i class="fas fa-edit"></i> 编辑</button>
+            <button class="btn-danger del-rec-btn" data-id="${rec.id}" style="padding:4px 10px;font-size:12px;"><i class="fas fa-trash"></i> 删除</button>
+          </div>
+        </div>
+        <div style="font-size:13px;color:#666;margin-bottom:6px;">
+          <span><i class="fas fa-user-tie" style="width:14px;color:#999;"></i> ${escHtml(rec.xiaoer)}</span>
+          <span style="margin-left:12px;"><i class="fas fa-map-marker-alt" style="width:14px;color:#999;"></i> ${escHtml(rec.province)} ${escHtml(rec.city)}</span>
+          <span style="margin-left:12px;"><i class="fas fa-phone" style="width:14px;color:#999;"></i> ${rec.phone}</span>
+        </div>
+        <div style="margin-bottom:6px;">
+          ${(rec.sessions || []).map((s, i) => `<span class="session-tag session-tag-${SESSION_OPTIONS.indexOf(s) % 6}">${escHtml(s)}</span>`).join(' ')}
+        </div>
+        <div style="font-size:11px;color:#BFBFBF;">${formatTime(rec.createdAt)}</div>
+      </div>
+    `).join('');
+
+    // Edit buttons
+    listEl.querySelectorAll('.edit-rec-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingRecordId = btn.dataset.id;
+        renderForm();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    // Delete buttons
+    listEl.querySelectorAll('.del-rec-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        showConfirm('确认删除', '删除后不可恢复，确定要删除该记录吗？', () => {
+          const all = getRecords().filter(r => r.id !== btn.dataset.id);
+          saveRecords(all);
+          showToast('已删除', 'success');
+          renderForm();
+        });
+      });
+    });
+  }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ====================== ADMIN PAGE ======================
+function renderAdmin() {
+  if (sessionStorage.getItem('admin_logged_in') !== 'true') {
+    renderLogin();
+    return;
+  }
+
+  const config = getConfig();
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+    <div class="admin-nav">
+      <div style="font-size:15px;font-weight:600;color:#333;">
+        <i class="fas fa-cog" style="color:var(--primary);"></i> 2026双11 &middot; 参会登记管理后台
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="cutoff-label" style="font-size:13px;color:${config.isClosed ? 'var(--danger)' : 'var(--success)'};font-weight:500;">
+            ${config.isClosed ? '已截单' : '报名中'}
+          </span>
+          <label class="switch">
+            <input type="checkbox" id="cutoff-toggle" ${config.isClosed ? '' : 'checked'}>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+        <button class="btn-outline" id="logout-btn" style="font-size:12px;padding:6px 12px;">
+          <i class="fas fa-sign-out-alt"></i> 退出
+        </button>
+      </div>
+    </div>
+
+    <div style="max-width:1100px;margin:0 auto;padding:16px;">
+      <div style="display:flex;border-bottom:1px solid #F0F0F0;margin-bottom:16px;overflow-x:auto;">
+        <button class="tab-btn active" data-tab="overview">数据概览</button>
+        <button class="tab-btn" data-tab="records">全部记录</button>
+        <button class="tab-btn" data-tab="sessions">场次统计</button>
+        <button class="tab-btn" data-tab="settings">系统设置</button>
+      </div>
+
+      <div id="tab-content"></div>
+    </div>
+  `;
+
+  // Cutoff toggle
+  document.getElementById('cutoff-toggle').addEventListener('change', function() {
+    const newState = !this.checked; // checked = open (not closed)
+    const msg = newState ? '确定要截单吗？截单后商家将无法提交登记。' : '确定要重新开放报名吗？';
+    showConfirm(newState ? '确认截单' : '确认开放', msg, () => {
+      const cfg = getConfig();
+      cfg.isClosed = newState;
+      saveConfig(cfg);
+      const label = document.getElementById('cutoff-label');
+      label.textContent = newState ? '已截单' : '报名中';
+      label.style.color = newState ? 'var(--danger)' : 'var(--success)';
+      showToast(newState ? '已截单' : '已开放报名', 'success');
+    }, () => {
+      this.checked = !this.checked;
+    });
+  });
+
+  // Logout
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('admin_logged_in');
+    navigate('#/');
+  });
+
+  // Tabs
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAdminTab(btn.dataset.tab);
+    });
+  });
+
+  renderAdminTab('overview');
+}
+
+function renderLogin() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div style="max-width:400px;margin:80px auto;padding:16px;">
+      <div class="card" style="padding:32px;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <i class="fas fa-lock" style="font-size:36px;color:var(--primary);margin-bottom:12px;display:block;"></i>
+          <h2 style="font-size:18px;font-weight:600;">管理后台登录</h2>
+          <p style="font-size:13px;color:#999;margin-top:4px;">请输入管理密码</p>
+        </div>
+        <input type="password" class="form-input" id="admin-pwd" placeholder="请输入密码" style="margin-bottom:16px;">
+        <button class="btn-primary" id="login-btn" style="width:100%;">登录</button>
+        <div style="text-align:center;margin-top:16px;">
+          <a href="#/" style="color:#999;font-size:13px;text-decoration:none;">&larr; 返回登记表</a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('admin-pwd').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  function doLogin() {
+    const pwd = document.getElementById('admin-pwd').value;
+    const config = getConfig();
+    if (pwd === config.password) {
+      sessionStorage.setItem('admin_logged_in', 'true');
+      renderAdmin();
+    } else {
+      showToast('密码错误', 'error');
+    }
+  }
+}
+
+// ====================== ADMIN TABS ======================
+let chartInstances = [];
+
+function renderAdminTab(tab) {
+  // Destroy old charts
+  chartInstances.forEach(c => c.destroy());
+  chartInstances = [];
+
+  const container = document.getElementById('tab-content');
+
+  switch(tab) {
+    case 'overview': renderOverview(container); break;
+    case 'records': renderRecords(container); break;
+    case 'sessions': renderSessions(container); break;
+    case 'settings': renderSettings(container); break;
+  }
+}
+
+function renderOverview(container) {
+  const records = getRecords();
+  const config = getConfig();
+  const totalReg = records.length;
+  const uniqueMerchants = new Set(records.map(r => r.merchant)).size;
+  const allSessions = records.flatMap(r => r.sessions || []);
+  const totalSessions = allSessions.length;
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;" class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value">${totalReg}</div>
+        <div class="kpi-label">登记总数</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${uniqueMerchants}</div>
+        <div class="kpi-label">商家数</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${totalSessions}</div>
+        <div class="kpi-label">场次报名总数</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" style="color:${config.isClosed ? 'var(--danger)' : 'var(--success)'};font-size:20px;">${config.isClosed ? '已截单' : '报名中'}</div>
+        <div class="kpi-label">当前状态</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="chart-grid">
+      <div class="card" style="padding:16px;">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">各场次报名人数</h3>
+        <canvas id="chart-sessions" height="250"></canvas>
+      </div>
+      <div class="card" style="padding:16px;">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">省份分布 TOP10</h3>
+        <canvas id="chart-provinces" height="250"></canvas>
+      </div>
+    </div>
+
+    <style>
+      @media(max-width:768px) {
+        .kpi-grid { grid-template-columns: repeat(2,1fr) !important; }
+        .chart-grid { grid-template-columns: 1fr !important; }
+      }
+    </style>
+  `;
+
+  // Session bar chart
+  const sessionCounts = SESSION_OPTIONS.map(s => allSessions.filter(x => x === s).length);
+  const sessionLabels = SESSION_OPTIONS.map(s => {
+    const parts = s.split(' ');
+    return parts[0] + '\n' + (parts[1] || '') + ' ' + (parts[2] || '');
+  });
+
+  const ctx1 = document.getElementById('chart-sessions').getContext('2d');
+  chartInstances.push(new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: SESSION_OPTIONS,
+      datasets: [{
+        label: '报名人数',
+        data: sessionCounts,
+        backgroundColor: ['#1677FF','#FA8C16','#52C41A','#FF4D4F','#722ED1','#13C2C2'],
+        borderRadius: 6,
+        maxBarThickness: 40
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  }));
+
+  // Province pie chart
+  const provinceCount = {};
+  records.forEach(r => {
+    provinceCount[r.province] = (provinceCount[r.province] || 0) + 1;
+  });
+  const sorted = Object.entries(provinceCount).sort((a,b) => b[1]-a[1]).slice(0,10);
+  const provLabels = sorted.map(s => s[0]);
+  const provData = sorted.map(s => s[1]);
+
+  const ctx2 = document.getElementById('chart-provinces').getContext('2d');
+  chartInstances.push(new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: provLabels,
+      datasets: [{
+        data: provData,
+        backgroundColor: ['#1677FF','#36CBCB','#FAAD14','#FF4D4F','#722ED1','#52C41A','#EB2F96','#1890FF','#FA541C','#2F54EB'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 11 }, padding: 8 } }
+      }
+    }
+  }));
+}
+
+// ====================== RECORDS TAB ======================
+let recordsPage = 1;
+let recordsSearch = '';
+let recordsSessionFilter = '';
+const PAGE_SIZE = 20;
+
+function renderRecords(container) {
+  const allRecords = getRecords().sort((a,b) => b.createdAt - a.createdAt);
+
+  let filtered = allRecords;
+  if (recordsSearch) {
+    const q = recordsSearch.toLowerCase();
+    filtered = filtered.filter(r =>
+      (r.merchant || '').toLowerCase().includes(q) ||
+      (r.guestName || '').toLowerCase().includes(q) ||
+      (r.xiaoer || '').toLowerCase().includes(q) ||
+      (r.phone || '').includes(q)
+    );
+  }
+  if (recordsSessionFilter) {
+    filtered = filtered.filter(r => (r.sessions || []).includes(recordsSessionFilter));
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if (recordsPage > totalPages) recordsPage = totalPages;
+  const start = (recordsPage - 1) * PAGE_SIZE;
+  const pageRecords = filtered.slice(start, start + PAGE_SIZE);
+
+  container.innerHTML = `
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center;">
+        <input type="text" class="form-input" id="rec-search" placeholder="搜索商家/嘉宾/小二/手机号" value="${escHtml(recordsSearch)}" style="max-width:240px;">
+        <select class="form-input" id="rec-session-filter" style="max-width:200px;">
+          <option value="">全部场次</option>
+          ${SESSION_OPTIONS.map(s => `<option value="${escHtml(s)}" ${recordsSessionFilter===s?'selected':''}>${escHtml(s)}</option>`).join('')}
+        </select>
+        <button class="btn-outline" id="export-excel-btn"><i class="fas fa-file-excel"></i> 导出Excel</button>
+        <button class="btn-primary" id="add-record-btn" style="padding:8px 16px;font-size:13px;margin-left:auto;"><i class="fas fa-plus"></i> 新增记录</button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>商家</th>
+              <th>嘉宾</th>
+              <th>Title</th>
+              <th>小二</th>
+              <th>省</th>
+              <th>市</th>
+              <th>手机号</th>
+              <th>参会场次</th>
+              <th>提交时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageRecords.length === 0 ? '<tr><td colspan="11" style="text-align:center;color:#999;padding:24px;">暂无数据</td></tr>' : ''}
+            ${pageRecords.map((rec, i) => `
+              <tr>
+                <td>${start + i + 1}</td>
+                <td>${escHtml(rec.merchant)}</td>
+                <td>${escHtml(rec.guestName)}</td>
+                <td>${escHtml(rec.guestTitle)}</td>
+                <td>${escHtml(rec.xiaoer)}</td>
+                <td>${escHtml(rec.province)}</td>
+                <td>${escHtml(rec.city)}</td>
+                <td>${rec.phone}</td>
+                <td>${(rec.sessions||[]).map((s,idx) => `<span class="session-tag session-tag-${SESSION_OPTIONS.indexOf(s) % 6}">${escHtml(s)}</span>`).join(' ')}</td>
+                <td style="white-space:nowrap;">${formatTime(rec.createdAt)}</td>
+                <td style="white-space:nowrap;">
+                  <button class="btn-outline admin-edit-btn" data-id="${rec.id}" style="padding:3px 8px;font-size:11px;margin-right:4px;"><i class="fas fa-edit"></i></button>
+                  <button class="btn-danger admin-del-btn" data-id="${rec.id}" style="padding:3px 8px;font-size:11px;"><i class="fas fa-trash"></i></button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px;">
+        <span style="font-size:13px;color:#999;">共 ${filtered.length} 条记录，第 ${recordsPage}/${totalPages} 页</span>
+        <div style="display:flex;gap:4px;" id="pagination"></div>
+      </div>
+    </div>
+  `;
+
+  // Pagination
+  const pagEl = document.getElementById('pagination');
+  const renderPageBtn = (label, page, active, disabled) => {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (active ? ' active' : '');
+    btn.textContent = label;
+    btn.disabled = disabled;
+    btn.addEventListener('click', () => { recordsPage = page; renderAdminTab('records'); });
+    return btn;
+  };
+
+  pagEl.appendChild(renderPageBtn('\u00AB', 1, false, recordsPage <= 1));
+  pagEl.appendChild(renderPageBtn('\u2039', recordsPage - 1, false, recordsPage <= 1));
+
+  let startP = Math.max(1, recordsPage - 2);
+  let endP = Math.min(totalPages, recordsPage + 2);
+  if (endP - startP < 4) {
+    if (startP === 1) endP = Math.min(totalPages, startP + 4);
+    else startP = Math.max(1, endP - 4);
+  }
+
+  for (let p = startP; p <= endP; p++) {
+    pagEl.appendChild(renderPageBtn(p, p, p === recordsPage, false));
+  }
+
+  pagEl.appendChild(renderPageBtn('\u203A', recordsPage + 1, false, recordsPage >= totalPages));
+  pagEl.appendChild(renderPageBtn('\u00BB', totalPages, false, recordsPage >= totalPages));
+
+  // Search
+  const searchEl = document.getElementById('rec-search');
+  let searchTimeout;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      recordsSearch = searchEl.value.trim();
+      recordsPage = 1;
+      renderAdminTab('records');
+    }, 300);
+  });
+
+  // Session filter
+  document.getElementById('rec-session-filter').addEventListener('change', function() {
+    recordsSessionFilter = this.value;
+    recordsPage = 1;
+    renderAdminTab('records');
+  });
+
+  // Export Excel
+  document.getElementById('export-excel-btn').addEventListener('click', () => {
+    const data = filtered.map((r, i) => ({
+      '#': i + 1,
+      '商家名称': r.merchant,
+      '嘉宾姓名': r.guestName,
+      '嘉宾Title': r.guestTitle,
+      '对接小二': r.xiaoer,
+      '来源省': r.province,
+      '来源市': r.city,
+      '手机号': r.phone,
+      '参会场次': (r.sessions || []).join('、'),
+      '提交时间': formatTime(r.createdAt)
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '参会登记');
+    XLSX.writeFile(wb, `2026双11参会登记_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('导出成功', 'success');
+  });
+
+  // Add record
+  document.getElementById('add-record-btn').addEventListener('click', () => {
+    showRecordModal(null, () => renderAdminTab('records'));
+  });
+
+  // Edit buttons
+  container.querySelectorAll('.admin-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showRecordModal(btn.dataset.id, () => renderAdminTab('records'));
+    });
+  });
+
+  // Delete buttons
+  container.querySelectorAll('.admin-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showConfirm('确认删除', '删除后不可恢复，确定删除该记录吗？', () => {
+        const all = getRecords().filter(r => r.id !== btn.dataset.id);
+        saveRecords(all);
+        showToast('已删除', 'success');
+        renderAdminTab('records');
+      });
+    });
+  });
+}
+
+function showRecordModal(recordId, onSave) {
+  const isEdit = !!recordId;
+  let rec = null;
+  if (isEdit) {
+    rec = getRecords().find(r => r.id === recordId);
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title">${isEdit ? '编辑记录' : '新增记录'}</div>
+        <button id="modal-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">商家名称<span class="required">*</span></label>
+        <input type="text" class="form-input" id="m-merchant" value="${rec ? escHtml(rec.merchant) : ''}">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">嘉宾姓名<span class="required">*</span></label>
+        <input type="text" class="form-input" id="m-guest" value="${rec ? escHtml(rec.guestName) : ''}">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">嘉宾Title<span class="required">*</span></label>
+        <input type="text" class="form-input" id="m-title" value="${rec ? escHtml(rec.guestTitle) : ''}">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">对接小二<span class="required">*</span></label>
+        <input type="text" class="form-input" id="m-xiaoer" value="${rec ? escHtml(rec.xiaoer) : ''}">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">来源省<span class="required">*</span></label>
+        <div id="m-province-wrap"></div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">来源市<span class="required">*</span></label>
+        <div id="m-city-wrap"></div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">手机号<span class="required">*</span></label>
+        <input type="text" class="form-input" id="m-phone" maxlength="11" value="${rec ? rec.phone : ''}">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label class="form-label">参会场次<span class="required">*</span></label>
+        <div id="m-sessions-wrap"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn-outline" id="modal-cancel">取消</button>
+        <button class="btn-primary" id="modal-save">${isEdit ? '保存修改' : '添加'}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Init selects in modal
+  const mProvSelect = createSearchSelect(
+    overlay.querySelector('#m-province-wrap'),
+    PROVINCES,
+    '请选择省份',
+    (province) => {
+      const cities = REGION_DATA[province] || [];
+      mCitySelect.setOptions(cities);
+      mCitySelect.clear();
+    },
+    true
+  );
+  const mCitySelect = createSearchSelect(
+    overlay.querySelector('#m-city-wrap'),
+    [],
+    '请先选择省份',
+    () => {},
+    true
+  );
+  const mSessionSelect = createTagSelect(
+    overlay.querySelector('#m-sessions-wrap'),
+    SESSION_OPTIONS
+  );
+
+  if (rec) {
+    mProvSelect.setValue(rec.province || '');
+    const cities = REGION_DATA[rec.province] || [];
+    mCitySelect.setOptions(cities);
+    mCitySelect.setValue(rec.city || '');
+    mSessionSelect.setValue(rec.sessions || []);
+  }
+
+  // Close
+  overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#modal-cancel').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // Save
+  overlay.querySelector('#modal-save').addEventListener('click', () => {
+    const merchant = overlay.querySelector('#m-merchant').value.trim();
+    const guest = overlay.querySelector('#m-guest').value.trim();
+    const title = overlay.querySelector('#m-title').value.trim();
+    const xiaoer = overlay.querySelector('#m-xiaoer').value.trim();
+    const province = mProvSelect.getValue();
+    const city = mCitySelect.getValue();
+    const phone = overlay.querySelector('#m-phone').value.trim();
+    const sessions = mSessionSelect.getValue();
+
+    // Validate
+    if (!merchant || merchant.length < 2) { showToast('商家名称至少2个字符', 'error'); return; }
+    if (!guest || guest.length < 2) { showToast('嘉宾姓名至少2个字符', 'error'); return; }
+    if (!title) { showToast('请输入嘉宾Title', 'error'); return; }
+    if (!xiaoer) { showToast('请输入对接小二', 'error'); return; }
+    if (!province) { showToast('请选择来源省', 'error'); return; }
+    if (!city) { showToast('请选择来源市', 'error'); return; }
+    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) { showToast('请输入正确的11位手机号', 'error'); return; }
+    if (sessions.length === 0) { showToast('请至少选择一个参会场次', 'error'); return; }
+
+    const allRecords = getRecords();
+
+    if (isEdit) {
+      const idx = allRecords.findIndex(r => r.id === recordId);
+      if (idx >= 0) {
+        allRecords[idx] = {
+          ...allRecords[idx],
+          merchant, guestName: guest, guestTitle: title, xiaoer,
+          province, city, phone, sessions,
+          updatedAt: Date.now()
+        };
+      }
+    } else {
+      allRecords.push({
+        id: genId(),
+        merchant, guestName: guest, guestTitle: title, xiaoer,
+        province, city, phone, sessions,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      });
+    }
+
+    saveRecords(allRecords);
+    overlay.remove();
+    showToast(isEdit ? '已更新' : '已添加', 'success');
+    onSave && onSave();
+  });
+}
+
+// ====================== SESSIONS TAB ======================
+function renderSessions(container) {
+  const records = getRecords();
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+      ${SESSION_OPTIONS.map((s, idx) => {
+        const sessionRecords = records.filter(r => (r.sessions || []).includes(s));
+        const merchants = [...new Set(sessionRecords.map(r => r.merchant))];
+        const xiaoerDist = {};
+        sessionRecords.forEach(r => { xiaoerDist[r.xiaoer] = (xiaoerDist[r.xiaoer] || 0) + 1; });
+        const xiaoerSorted = Object.entries(xiaoerDist).sort((a,b) => b[1]-a[1]);
+
+        return `
+          <div class="card" style="padding:20px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <span class="session-tag session-tag-${idx % 6}" style="font-size:13px;padding:4px 12px;">${escHtml(s)}</span>
+            </div>
+            <div style="font-size:32px;font-weight:700;color:var(--primary);margin-bottom:4px;">${sessionRecords.length}</div>
+            <div style="font-size:12px;color:#999;margin-bottom:12px;">人报名 &middot; ${merchants.length} 个商家</div>
+
+            <div style="margin-bottom:8px;">
+              <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px;">商家列表</div>
+              <div style="font-size:12px;color:#999;max-height:60px;overflow-y:auto;">
+                ${merchants.length > 0 ? merchants.map(m => `<span style="display:inline-block;background:#F5F5F5;padding:1px 6px;border-radius:3px;margin:1px;">${escHtml(m)}</span>`).join('') : '<span>暂无</span>'}
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px;">小二分布</div>
+              <div style="font-size:12px;color:#999;">
+                ${xiaoerSorted.length > 0 ? xiaoerSorted.map(([name, cnt]) => `<span style="display:inline-block;background:#F0F5FF;padding:1px 6px;border-radius:3px;margin:1px;">${escHtml(name)}(${cnt})</span>`).join('') : '<span>暂无</span>'}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ====================== SETTINGS TAB ======================
+function renderSettings(container) {
+  const config = getConfig();
+
+  container.innerHTML = `
+    <div style="max-width:600px;">
+      <div class="card" style="padding:20px;margin-bottom:16px;">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;"><i class="fas fa-key"></i> 修改管理密码</h3>
+        <div style="margin-bottom:12px;">
+          <label class="form-label">当前密码</label>
+          <input type="password" class="form-input" id="s-old-pwd" style="max-width:300px;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="form-label">新密码</label>
+          <input type="password" class="form-input" id="s-new-pwd" style="max-width:300px;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="form-label">确认新密码</label>
+          <input type="password" class="form-input" id="s-confirm-pwd" style="max-width:300px;">
+        </div>
+        <button class="btn-primary" id="change-pwd-btn" style="padding:8px 20px;font-size:13px;">修改密码</button>
+      </div>
+
+      <div class="card" style="padding:20px;margin-bottom:16px;">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;"><i class="fas fa-database"></i> 数据管理</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-outline" id="export-json-btn"><i class="fas fa-download"></i> 导出JSON备份</button>
+          <label class="btn-outline" style="cursor:pointer;">
+            <i class="fas fa-upload"></i> 导入JSON备份
+            <input type="file" id="import-json-input" accept=".json" style="display:none;">
+          </label>
+        </div>
+      </div>
+
+      <div class="card" style="padding:20px;border:1px solid #FFA39E;">
+        <h3 style="font-size:15px;font-weight:600;color:var(--danger);margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i> 危险操作</h3>
+        <p style="font-size:13px;color:#999;margin-bottom:12px;">清空所有登记记录，此操作不可恢复。</p>
+        <button class="btn-danger" id="clear-all-btn"><i class="fas fa-trash-alt"></i> 清空所有记录</button>
+      </div>
+    </div>
+  `;
+
+  // Change password
+  document.getElementById('change-pwd-btn').addEventListener('click', () => {
+    const oldPwd = document.getElementById('s-old-pwd').value;
+    const newPwd = document.getElementById('s-new-pwd').value;
+    const confirmPwd = document.getElementById('s-confirm-pwd').value;
+    const cfg = getConfig();
+
+    if (oldPwd !== cfg.password) { showToast('当前密码不正确', 'error'); return; }
+    if (!newPwd || newPwd.length < 4) { showToast('新密码至少4个字符', 'error'); return; }
+    if (newPwd !== confirmPwd) { showToast('两次密码输入不一致', 'error'); return; }
+
+    cfg.password = newPwd;
+    saveConfig(cfg);
+    showToast('密码已修改', 'success');
+    document.getElementById('s-old-pwd').value = '';
+    document.getElementById('s-new-pwd').value = '';
+    document.getElementById('s-confirm-pwd').value = '';
+  });
+
+  // Export JSON
+  document.getElementById('export-json-btn').addEventListener('click', () => {
+    const data = {
+      records: getRecords(),
+      config: getConfig(),
+      exportTime: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reg_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('备份已导出', 'success');
+  });
+
+  // Import JSON
+  document.getElementById('import-json-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.records && Array.isArray(data.records)) {
+          showConfirm('确认导入', `将导入 ${data.records.length} 条记录，现有记录将被覆盖。确定吗？`, () => {
+            saveRecords(data.records);
+            if (data.config) saveConfig(data.config);
+            showToast(`已导入 ${data.records.length} 条记录`, 'success');
+            renderAdminTab('settings');
+          });
+        } else {
+          showToast('文件格式不正确', 'error');
+        }
+      } catch {
+        showToast('文件解析失败', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // Clear all
+  document.getElementById('clear-all-btn').addEventListener('click', () => {
+    showPrompt(
+      '确认清空',
+      '此操作将删除所有登记记录且不可恢复。请输入当前管理密码确认：',
+      '请输入密码',
+      (pwd) => {
+        const cfg = getConfig();
+        if (pwd === cfg.password) {
+          saveRecords([]);
+          showToast('所有记录已清空', 'success');
+          renderAdminTab('settings');
+        } else {
+          showToast('密码不正确，操作已取消', 'error');
+        }
+      }
+    );
+  });
+}
+
+// ====================== ROUTER INIT ======================
+function handleRoute() {
+  const route = getRoute();
+  editingRecordId = null;
+  if (route === 'admin') {
+    renderAdmin();
+  } else {
+    renderForm();
+  }
+}
+
+window.addEventListener('hashchange', handleRoute);
+window.addEventListener('DOMContentLoaded', () => {
+  if (!window.location.hash) window.location.hash = '#/';
+  handleRoute();
+});
+</script>
+</body>
+</html>
