@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --primary: #1677FF;
@@ -459,6 +460,55 @@ const SESSION_OPTIONS = [
   "男女鞋场 9/15 14:00"
 ];
 
+// ====================== SUPABASE CLOUD DB ======================
+const SUPABASE_URL = "https://fvvpyciwiakliqssbxqg.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2dnB5Y2l3aWFrbGlxc3NieHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjI2MjUsImV4cCI6MjEwMzMzODYyNX0.E29_0vNuM2qD7SdRfLuGTAfQpy_v6jwa9ksgflBoBdg";
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let _sbReady = false;
+
+async function loadFromCloud() {
+  try {
+    const { data, error } = await _sb.from('registrations').select('*').order('created_at', { ascending: false });
+    if (error) { console.warn('Cloud load error:', error.message); return; }
+    if (data) {
+      _recordCache = data.map(r => ({
+        id: r.id, merchant: r.merchant, guestName: r.guest_name, guestTitle: r.guest_title,
+        xiaoer: r.xiaoer, province: r.province, city: r.city, phone: r.phone,
+        sessions: r.sessions || [], createdAt: new Date(r.created_at).getTime(), updatedAt: new Date(r.updated_at).getTime()
+      }));
+      localStorage.setItem(STORAGE_RECORDS, JSON.stringify(_recordCache));
+      _sbReady = true;
+    }
+  } catch (e) { console.warn('Cloud load exception:', e); }
+}
+
+async function cloudInsert(rec) {
+  const row = { id: rec.id, merchant: rec.merchant, guest_name: rec.guestName, guest_title: rec.guestTitle,
+    xiaoer: rec.xiaoer, province: rec.province, city: rec.city, phone: rec.phone, sessions: rec.sessions };
+  const { error } = await _sb.from('registrations').insert(row);
+  if (error) console.warn('Cloud insert error:', error.message);
+}
+
+async function cloudUpdate(id, fields) {
+  const row = {};
+  if (fields.merchant !== undefined) row.merchant = fields.merchant;
+  if (fields.guestName !== undefined) row.guest_name = fields.guestName;
+  if (fields.guestTitle !== undefined) row.guest_title = fields.guestTitle;
+  if (fields.xiaoer !== undefined) row.xiaoer = fields.xiaoer;
+  if (fields.province !== undefined) row.province = fields.province;
+  if (fields.city !== undefined) row.city = fields.city;
+  if (fields.phone !== undefined) row.phone = fields.phone;
+  if (fields.sessions !== undefined) row.sessions = fields.sessions;
+  row.updated_at = new Date().toISOString();
+  const { error } = await _sb.from('registrations').update(row).eq('id', id);
+  if (error) console.warn('Cloud update error:', error.message);
+}
+
+async function cloudDelete(id) {
+  const { error } = await _sb.from('registrations').delete().eq('id', id);
+  if (error) console.warn('Cloud delete error:', error.message);
+}
+
 // ====================== STORAGE KEYS ======================
 const STORAGE_RECORDS = "reg_records";
 const STORAGE_CONFIG = "reg_config";
@@ -472,13 +522,18 @@ function getConfig() {
 }
 function saveConfig(cfg) { localStorage.setItem(STORAGE_CONFIG, JSON.stringify(cfg)); }
 
+let _recordCache = null;
 function getRecords() {
+  if (_recordCache) return [..._recordCache];
   try {
     const r = JSON.parse(localStorage.getItem(STORAGE_RECORDS));
     return Array.isArray(r) ? r : [];
   } catch { return []; }
 }
-function saveRecords(records) { localStorage.setItem(STORAGE_RECORDS, JSON.stringify(records)); }
+function saveRecords(records) {
+  _recordCache = records;
+  localStorage.setItem(STORAGE_RECORDS, JSON.stringify(records));
+}
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
@@ -928,6 +983,7 @@ function renderForm() {
           updatedAt: Date.now()
         };
         saveRecords(allRecords);
+        cloudUpdate(editingRecordId, { merchant, guestName: guest, guestTitle: title, xiaoer, province, city, phone, sessions });
       }
       editingRecordId = null;
       showToast('记录已更新！', 'success');
@@ -942,6 +998,7 @@ function renderForm() {
       };
       allRecords.push(record);
       saveRecords(allRecords);
+      cloudInsert(record);
 
       const totalGuests = allRecords.filter(r => r.merchant === merchant).length;
       showToast(`提交成功！您已登记 ${totalGuests} 位参会嘉宾`, 'success');
@@ -996,6 +1053,7 @@ function renderForm() {
         showConfirm('确认删除', '删除后不可恢复，确定要删除该记录吗？', () => {
           const all = getRecords().filter(r => r.id !== btn.dataset.id);
           saveRecords(all);
+          cloudDelete(btn.dataset.id);
           showToast('已删除', 'success');
           renderForm();
         });
@@ -1427,6 +1485,7 @@ function renderRecords(container) {
       showConfirm('确认删除', '删除后不可恢复，确定删除该记录吗？', () => {
         const all = getRecords().filter(r => r.id !== btn.dataset.id);
         saveRecords(all);
+        cloudDelete(btn.dataset.id);
         showToast('已删除', 'success');
         renderAdminTab('records');
       });
@@ -1558,15 +1617,18 @@ function showRecordModal(recordId, onSave) {
           province, city, phone, sessions,
           updatedAt: Date.now()
         };
+        cloudUpdate(recordId, { merchant, guestName: guest, guestTitle: title, xiaoer, province, city, phone, sessions });
       }
     } else {
-      allRecords.push({
+      const newRec = {
         id: genId(),
         merchant, guestName: guest, guestTitle: title, xiaoer,
         province, city, phone, sessions,
         createdAt: Date.now(),
         updatedAt: Date.now()
-      });
+      };
+      allRecords.push(newRec);
+      cloudInsert(newRec);
     }
 
     saveRecords(allRecords);
@@ -1730,7 +1792,10 @@ function renderSettings(container) {
       (pwd) => {
         const cfg = getConfig();
         if (pwd === cfg.password) {
+          const oldRecords = getRecords();
           saveRecords([]);
+          // Delete all from cloud
+          oldRecords.forEach(r => cloudDelete(r.id));
           showToast('所有记录已清空', 'success');
           renderAdminTab('settings');
         } else {
@@ -1742,10 +1807,11 @@ function renderSettings(container) {
 }
 
 // ====================== ROUTER INIT ======================
-function handleRoute() {
+async function handleRoute() {
   const route = getRoute();
   editingRecordId = null;
   if (route === 'admin') {
+    await loadFromCloud();
     renderAdmin();
   } else {
     renderForm();
@@ -1753,7 +1819,8 @@ function handleRoute() {
 }
 
 window.addEventListener('hashchange', handleRoute);
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadFromCloud();
   if (!window.location.hash) window.location.hash = '#/';
   handleRoute();
 });
