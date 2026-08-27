@@ -28,6 +28,7 @@
   <div id="app"></div>
 
   <script>
+    console.log('=== Script starting ===');
     // ==================== SUPABASE CONFIG ====================
     const SUPABASE_URL = 'https://fvvpyciwiakliqssbxqg.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2dnB5Y2l3aWFrbGlxc3NieHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjI2MjUsImV4cCI6MjEwMzMzODYyNX0.E29_0vNuM2qD7SdRfLuGTAfQpy_v6jwa9ksgflBoBdg';
@@ -906,13 +907,19 @@
     }
 
     // ==================== INIT ====================
+    console.log('=== Init section reached ===');
     async function startApp() {
+      console.log('=== startApp called ===');
       await loadFromCloud();
+      console.log('=== Cloud loaded, rendering ===');
       render();
+      console.log('=== Render complete, app length: ' + document.getElementById('app').innerHTML.length + ' ===');
     }
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      console.log('=== DOM ready, starting app ===');
       startApp();
     } else {
+      console.log('=== Waiting for DOMContentLoaded ===');
       window.addEventListener('DOMContentLoaded', startApp);
     }
     window.addEventListener('hashchange', render);
