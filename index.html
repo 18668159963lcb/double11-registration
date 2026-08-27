@@ -14,288 +14,187 @@
     .dropdown-item:hover { background: #f3f4f6; }
     .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 24px; border-radius: 8px; color: white; font-weight: 500; animation: slideIn 0.3s ease; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: center; justify-content: center; }
-    .cutoff-banner { background: #fff1f0; border: 1px solid #ffa39e; color: #cf1322; padding: 16px; border-radius: 8px; text-align: center; font-weight: 600; }
-    .toggle-wrapper { position: relative; width: 40px; height: 24px; cursor: pointer; }
-    .toggle-bg { width: 40px; height: 24px; border-radius: 12px; transition: background 0.2s; }
-    .toggle-dot { position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.2s; }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
   <div id="app"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-
   <script>
-    // ==================== SUPABASE CONFIG ====================
-    const SUPABASE_URL = 'https://fvvpyciwiakliqssbxqg.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2dnB5Y2l3aWFrbGlxc3NieHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjI2MjUsImV4cCI6MjEwMzMzODYyNX0.E29_0vNuM2qD7SdRfLuGTAfQpy_v6jwa9ksgflBoBdg';
-
-    function getSbClient() {
-      return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
+    // ==================== CONFIG ====================
+    const WEBHOOK_URL = 'PASTE_YOUR_WEBHOOK_URL_HERE';
 
     // ==================== DATA CONSTANTS ====================
-    const SESSIONS_LIST = [
-      "服饰主会场 9/15 09:30",
-      "女装商家大会 9/15 14:00",
-      "男女鞋商家大会 9/15 14:00",
-      "内衣商家大会 9/15 14:00",
-      "箱包服配商家大会 9/15 14:00",
-      "男装商家大会 9/16 09:30"
+    var SESSIONS_LIST = [
+      '服饰主会场 9/15 09:30',
+      '女装商家大会 9/15 14:00',
+      '男女鞋商家大会 9/15 14:00',
+      '内衣商家大会 9/15 14:00',
+      '箱包服配商家大会 9/15 14:00',
+      '男装商家大会 9/16 09:30'
     ];
 
-    const PROVINCES_CITIES = {
-      "北京市": ["东城区", "西城区", "朝阳区", "海淀区", "丰台区", "石景山区", "通州区", "顺义区"],
-      "上海市": ["黄浦区", "徐汇区", "长宁区", "静安区", "普陀区", "虹口区", "浦东新区", "闵行区"],
-      "天津市": ["和平区", "河东区", "河西区", "南开区", "河北区", "滨海新区"],
-      "重庆市": ["渝中区", "江北区", "南岸区", "沙坪坝区", "九龙坡区", "渝北区"],
-      "广东省": ["广州", "深圳", "珠海", "东莞", "佛山", "中山", "惠州", "汕头"],
-      "浙江省": ["杭州", "宁波", "温州", "嘉兴", "湖州", "绍兴", "金华", "台州"],
-      "江苏省": ["南京", "苏州", "无锡", "常州", "南通", "徐州", "扬州", "镇江"],
-      "山东省": ["济南", "青岛", "烟台", "潍坊", "临沂", "淄博", "威海", "日照"],
-      "福建省": ["福州", "厦门", "泉州", "漳州", "莆田", "宁德", "龙岩"],
-      "四川省": ["成都", "绵阳", "德阳", "宜宾", "南充", "乐山", "泸州"],
-      "湖北省": ["武汉", "宜昌", "襄阳", "荆州", "黄石", "十堰", "荆门"],
-      "湖南省": ["长沙", "株洲", "湘潭", "衡阳", "岳阳", "常德", "郴州"],
-      "河南省": ["郑州", "洛阳", "开封", "南阳", "许昌", "新乡", "焦作"],
-      "河北省": ["石家庄", "唐山", "保定", "廊坊", "秦皇岛", "邯郸", "邢台"],
-      "辽宁省": ["沈阳", "大连", "鞍山", "抚顺", "锦州", "营口", "丹东"],
-      "吉林省": ["长春", "吉林", "四平", "通化", "延边", "白城"],
-      "黑龙江省": ["哈尔滨", "齐齐哈尔", "牡丹江", "佳木斯", "大庆", "鸡西"],
-      "安徽省": ["合肥", "芜湖", "蚌埠", "马鞍山", "安庆", "阜阳", "宿州"],
-      "江西省": ["南昌", "九江", "赣州", "景德镇", "上饶", "吉安", "宜春"],
-      "山西省": ["太原", "大同", "临汾", "运城", "长治", "晋城", "阳泉"],
-      "陕西省": ["西安", "咸阳", "宝鸡", "渭南", "延安", "汉中", "榆林"],
-      "甘肃省": ["兰州", "天水", "白银", "酒泉", "张掖", "武威", "庆阳"],
-      "青海省": ["西宁", "海东", "海西", "格尔木"],
-      "内蒙古自治区": ["呼和浩特", "包头", "鄂尔多斯", "赤峰", "通辽", "呼伦贝尔"],
-      "宁夏回族自治区": ["银川", "石嘴山", "吴忠", "固原", "中卫"],
-      "新疆维吾尔自治区": ["乌鲁木齐", "克拉玛依", "吐鲁番", "哈密", "库尔勒", "阿克苏"],
-      "西藏自治区": ["拉萨", "日喀则", "昌都", "林芝"],
-      "广西壮族自治区": ["南宁", "柳州", "桂林", "梧州", "北海", "玉林", "百色"],
-      "海南省": ["海口", "三亚", "儋州", "琼海", "文昌"],
-      "贵州省": ["贵阳", "遵义", "六盘水", "安顺", "毕节", "铜仁"],
-      "云南省": ["昆明", "曲靖", "大理", "玉溪", "红河", "楚雄", "文山"]
+    var PROVINCES_CITIES = {
+      '北京市': ['东城区', '西城区', '朝阳区', '海淀区', '丰台区', '石景山区', '通州区', '顺义区'],
+      '上海市': ['黄浦区', '徐汇区', '长宁区', '静安区', '普陀区', '虹口区', '浦东新区', '闵行区'],
+      '天津市': ['和平区', '河东区', '河西区', '南开区', '河北区', '滨海新区'],
+      '重庆市': ['渝中区', '江北区', '南岸区', '沙坪坝区', '九龙坡区', '渝北区'],
+      '广东省': ['广州', '深圳', '珠海', '东莞', '佛山', '中山', '惠州', '汕头'],
+      '浙江省': ['杭州', '宁波', '温州', '嘉兴', '湖州', '绍兴', '金华', '台州'],
+      '江苏省': ['南京', '苏州', '无锡', '常州', '南通', '徐州', '扬州', '镇江'],
+      '山东省': ['济南', '青岛', '烟台', '潍坊', '临沂', '淄博', '威海', '日照'],
+      '福建省': ['福州', '厦门', '泉州', '漳州', '莆田', '宁德', '龙岩'],
+      '四川省': ['成都', '绵阳', '德阳', '宜宾', '南充', '乐山', '泸州'],
+      '湖北省': ['武汉', '宜昌', '襄阳', '荆州', '黄石', '十堰', '荆门'],
+      '湖南省': ['长沙', '株洲', '湘潭', '衡阳', '岳阳', '常德', '郴州'],
+      '河南省': ['郑州', '洛阳', '开封', '南阳', '许昌', '新乡', '焦作'],
+      '河北省': ['石家庄', '唐山', '保定', '廊坊', '秦皇岛', '邯郸', '邢台'],
+      '辽宁省': ['沈阳', '大连', '鞍山', '抚顺', '锦州', '营口', '丹东'],
+      '吉林省': ['长春', '吉林', '四平', '通化', '延边', '白城'],
+      '黑龙江省': ['哈尔滨', '齐齐哈尔', '牡丹江', '佳木斯', '大庆', '鸡西'],
+      '安徽省': ['合肥', '芜湖', '蚌埠', '马鞍山', '安庆', '阜阳', '宿州'],
+      '江西省': ['南昌', '九江', '赣州', '景德镇', '上饶', '吉安', '宜春'],
+      '山西省': ['太原', '大同', '临汾', '运城', '长治', '晋城', '阳泉'],
+      '陕西省': ['西安', '咸阳', '宝鸡', '渭南', '延安', '汉中', '榆林'],
+      '甘肃省': ['兰州', '天水', '白银', '酒泉', '张掖', '武威', '庆阳'],
+      '青海省': ['西宁', '海东', '海西', '格尔木'],
+      '内蒙古自治区': ['呼和浩特', '包头', '鄂尔多斯', '赤峰', '通辽', '呼伦贝尔'],
+      '宁夏回族自治区': ['银川', '石嘴山', '吴忠', '固原', '中卫'],
+      '新疆维吾尔自治区': ['乌鲁木齐', '克拉玛依', '吐鲁番', '哈密', '库尔勒', '阿克苏'],
+      '西藏自治区': ['拉萨', '日喀则', '昌都', '林芝'],
+      '广西壮族自治区': ['南宁', '柳州', '桂林', '梧州', '北海', '玉林', '百色'],
+      '海南省': ['海口', '三亚', '儋州', '琼海', '文昌'],
+      '贵州省': ['贵阳', '遵义', '六盘水', '安顺', '毕节', '铜仁'],
+      '云南省': ['昆明', '曲靖', '大理', '玉溪', '红河', '楚雄', '文山']
     };
 
-    const EVENT_CARDS = [
+    var EVENT_CARDS = [
       {
-        date: "2026年09月15日", location: "杭州阿里巴巴西溪园区",
+        date: '2026年09月15日', location: '杭州阿里巴巴西溪园区',
         events: [
-          { icon: "👔", name: "服饰主会场", time: "09:30-12:30", venue: "B区报告厅", checkin: "08:30签到", color: "#1677FF" },
-          { icon: "👗", name: "女装商家大会", time: "14:00-17:30", venue: "B区报告厅", checkin: "13:00签到", color: "#EB2F96" },
-          { icon: "👟", name: "男女鞋商家大会", time: "14:00-16:30", venue: "B区多功能厅", checkin: "13:00签到", color: "#FA8C16" },
-          { icon: "🏷️", name: "内衣商家大会", time: "14:00-17:30", venue: "A区报告厅", checkin: "13:00签到", color: "#13C2C2" },
-          { icon: "👜", name: "箱包服配商家大会", time: "14:00-17:30", venue: "C区望江南报告厅", checkin: "13:00签到", color: "#52C41A" }
+          { icon: '\uD83D\uDC54', name: '服饰主会场', time: '09:30-12:30', venue: 'B区报告厅', checkin: '08:30签到', color: '#1677FF' },
+          { icon: '\uD83D\uDC57', name: '女装商家大会', time: '14:00-17:30', venue: 'B区报告厅', checkin: '13:00签到', color: '#EB2F96' },
+          { icon: '\uD83D\uDC5F', name: '男女鞋商家大会', time: '14:00-16:30', venue: 'B区多功能厅', checkin: '13:00签到', color: '#FA8C16' },
+          { icon: '\uD83C\uDFF7\uFE0F', name: '内衣商家大会', time: '14:00-17:30', venue: 'A区报告厅', checkin: '13:00签到', color: '#13C2C2' },
+          { icon: '\uD83D\uDC5C', name: '箱包服配商家大会', time: '14:00-17:30', venue: 'C区望江南报告厅', checkin: '13:00签到', color: '#52C41A' }
         ]
       },
       {
-        date: "2026年09月16日", location: "杭州阿里巴巴西溪园区",
+        date: '2026年09月16日', location: '杭州阿里巴巴西溪园区',
         events: [
-          { icon: "🧥", name: "男装商家大会", time: "09:30-12:30", venue: "A区报告厅", checkin: "08:30签到", color: "#722ED1" }
+          { icon: '\uD83E\uDDE5', name: '男装商家大会', time: '09:30-12:30', venue: 'A区报告厅', checkin: '08:30签到', color: '#722ED1' }
         ]
       }
     ];
 
     // ==================== STATE ====================
-    let _recordCache = [];
-    let _mySubmissionIds = JSON.parse(localStorage.getItem('mySubmissionIds') || '[]');
-    let _adminLoggedIn = false;
-    let _cutoff = JSON.parse(localStorage.getItem('cutoffConfig') || 'false');
-    let charts = {};
-    let recordsPage = 1;
-    let recordsFilter = { search: '', session: '' };
-
-    // ==================== CLOUD OPS ====================
-    async function loadFromCloud() {
-      try {
-        const sbClient = getSbClient();
-        const { data, error } = await sbClient.from('registrations').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        _recordCache = data || [];
-        localStorage.setItem('recordCache', JSON.stringify(_recordCache));
-        return _recordCache;
-      } catch (e) {
-        _recordCache = JSON.parse(localStorage.getItem('recordCache') || '[]');
-        return _recordCache;
-      }
-    }
-
-    function getRecords() { return _recordCache; }
-
-    async function cloudInsert(record) {
-      try {
-        const sbClient = getSbClient();
-        const { data, error } = await sbClient.from('registrations').insert(record).select();
-        if (error) throw error;
-        return data;
-      } catch (e) { /* silent */ }
-    }
-
-    async function cloudUpdate(id, updates) {
-      try {
-        const sbClient = getSbClient();
-        const { error } = await sbClient.from('registrations').update(updates).eq('id', id);
-        if (error) throw error;
-      } catch (e) { /* silent */ }
-    }
-
-    async function cloudDelete(id) {
-      try {
-        const sbClient = getSbClient();
-        const { error } = await sbClient.from('registrations').delete().eq('id', id);
-        if (error) throw error;
-      } catch (e) { /* silent */ }
-    }
+    var _mySubmissions = JSON.parse(localStorage.getItem('mySubmissions') || '[]');
 
     // ==================== UTILS ====================
-    function showToast(msg, type = 'success') {
-      const toast = document.createElement('div');
+    function showToast(msg, type) {
+      var toast = document.createElement('div');
       toast.className = 'toast';
-      toast.style.background = type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : '#1677ff';
+      toast.style.background = type === 'error' ? '#ff4d4f' : '#52c41a';
       toast.textContent = msg;
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      setTimeout(function() { toast.remove(); }, 3000);
     }
 
-    function showConfirm(msg, onOk) {
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      overlay.innerHTML = `
-        <div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-          <p class="text-gray-800 text-center mb-6">${msg}</p>
-          <div class="flex gap-3 justify-center">
-            <button id="confirmCancel" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">取消</button>
-            <button id="confirmOk" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">确定</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      overlay.querySelector('#confirmCancel').onclick = () => overlay.remove();
-      overlay.querySelector('#confirmOk').onclick = () => { overlay.remove(); onOk(); };
-    }
-
-    function formatDate(d) {
-      if (!d) return '-';
-      return new Date(d).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-    }
-
-    // ==================== ROUTER ====================
-    function getRoute() {
-      return window.location.hash === '#/admin' ? 'admin' : 'form';
-    }
-
-    function navigate(route) {
-      window.location.hash = route === 'admin' ? '#/admin' : '#/';
+    function getNowStr() {
+      var d = new Date();
+      var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
+             pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
     }
 
     // ==================== RENDER ====================
     function render() {
-      const route = getRoute();
-      const app = document.getElementById('app');
-      if (route === 'admin') {
-        renderAdmin(app);
-      } else {
-        renderForm(app);
-      }
-    }
-
-    // ==================== FORM PAGE ====================
-    function renderForm(container) {
-      container.innerHTML = `
-        <div class="max-w-3xl mx-auto py-8 px-4">
-          <div class="bg-white rounded-2xl shadow-sm p-8 mb-6">
-            <h1 class="text-2xl font-bold text-center text-gray-800 mb-2">2026双11大会 · 大客商家参会登记</h1>
-            <p class="text-center text-gray-500 mb-8">请如实填写以下信息，每个商家可批量登记多位参会嘉宾</p>
-            ${_cutoff ? '<div class="cutoff-banner mb-6"><i class="fas fa-lock mr-2"></i>已截单，暂不接受新的登记</div>' : ''}
-            <div id="formContent">
-              ${renderFormFields()}
-            </div>
-          </div>
-          ${renderSessionInfo()}
-          ${renderMySubmissions()}
-          <div class="text-center mt-6">
-            <a href="#/admin" class="text-gray-400 text-sm hover:text-gray-600"><i class="fas fa-lock mr-1"></i>管理后台</a>
-          </div>
-        </div>`;
+      var app = document.getElementById('app');
+      app.innerHTML =
+        '<div class="max-w-3xl mx-auto py-8 px-4">' +
+          '<div class="bg-white rounded-2xl shadow-sm p-8 mb-6">' +
+            '<h1 class="text-2xl font-bold text-center text-gray-800 mb-2">2026双11大会 · 大客商家参会登记</h1>' +
+            '<p class="text-center text-gray-500 mb-8">请如实填写以下信息，每个商家可批量登记多位参会嘉宾</p>' +
+            '<div id="formContent">' + renderFormFields() + '</div>' +
+          '</div>' +
+          renderSessionInfo() +
+          renderMySubmissions() +
+        '</div>';
       initFormEvents();
     }
 
     function renderFormFields() {
-      return `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">商家名称 <span class="text-red-500">*</span></label>
-            <input id="merchant" type="text" placeholder="请输入商家名称" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">对接小二 <span class="text-red-500">*</span></label>
-            <input id="xiaoer" type="text" placeholder="请输入对接小二花名" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div class="relative">
-            <label class="block text-sm font-medium text-gray-700 mb-1">来源省 <span class="text-red-500">*</span></label>
-            <input id="province" type="text" placeholder="请选择省份" autocomplete="off" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-            <div id="provinceDropdown" class="dropdown-menu hidden"></div>
-          </div>
-          <div class="relative">
-            <label class="block text-sm font-medium text-gray-700 mb-1">来源市 <span class="text-red-500">*</span></label>
-            <input id="city" type="text" placeholder="请选择城市" autocomplete="off" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" disabled>
-            <div id="cityDropdown" class="dropdown-menu hidden"></div>
-          </div>
-        </div>
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">参会场次 <span class="text-red-500">*</span></label>
-          <div id="sessionTags" class="flex flex-wrap gap-2">
-            ${SESSIONS_LIST.map(s => `<span class="session-tag px-3 py-1.5 border border-gray-300 rounded-full text-sm cursor-pointer hover:border-blue-400 transition" data-value="${s}">${s}</span>`).join('')}
-          </div>
-        </div>
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">参会嘉宾 <span class="text-red-500">*</span></label>
-          <div id="guestRows">
-            ${renderGuestRow(1)}
-          </div>
-          <button id="addGuestBtn" class="mt-3 text-blue-500 text-sm font-medium hover:text-blue-700">
-            <i class="fas fa-plus mr-1"></i>添加嘉宾（还可添加 <span id="remainingCount">9</span> 位）
-          </button>
-        </div>
-        <button id="submitBtn" class="w-full py-3 text-white font-semibold rounded-lg transition ${_cutoff ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}" ${_cutoff ? 'disabled' : ''}>
-          提交登记
-        </button>`;
+      return '' +
+        '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">' +
+          '<div>' +
+            '<label class="block text-sm font-medium text-gray-700 mb-1">商家名称 <span class="text-red-500">*</span></label>' +
+            '<input id="merchant" type="text" placeholder="请输入商家名称" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="block text-sm font-medium text-gray-700 mb-1">对接小二 <span class="text-red-500">*</span></label>' +
+            '<input id="xiaoer" type="text" placeholder="请输入对接小二花名" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">' +
+          '</div>' +
+        '</div>' +
+        '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">' +
+          '<div class="relative">' +
+            '<label class="block text-sm font-medium text-gray-700 mb-1">来源省 <span class="text-red-500">*</span></label>' +
+            '<input id="province" type="text" placeholder="请选择省份" autocomplete="off" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">' +
+            '<div id="provinceDropdown" class="dropdown-menu hidden"></div>' +
+          '</div>' +
+          '<div class="relative">' +
+            '<label class="block text-sm font-medium text-gray-700 mb-1">来源市 <span class="text-red-500">*</span></label>' +
+            '<input id="city" type="text" placeholder="请选择城市" autocomplete="off" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" disabled>' +
+            '<div id="cityDropdown" class="dropdown-menu hidden"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mb-4">' +
+          '<label class="block text-sm font-medium text-gray-700 mb-2">参会场次 <span class="text-red-500">*</span></label>' +
+          '<div id="sessionTags" class="flex flex-wrap gap-2">' +
+            SESSIONS_LIST.map(function(s) {
+              return '<span class="session-tag px-3 py-1.5 border border-gray-300 rounded-full text-sm cursor-pointer hover:border-blue-400 transition" data-value="' + s + '">' + s + '</span>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div class="mb-6">' +
+          '<label class="block text-sm font-medium text-gray-700 mb-2">参会嘉宾 <span class="text-red-500">*</span></label>' +
+          '<div id="guestRows">' + renderGuestRow(1) + '</div>' +
+          '<button id="addGuestBtn" class="mt-3 text-blue-500 text-sm font-medium hover:text-blue-700">' +
+            '<i class="fas fa-plus mr-1"></i>添加嘉宾（还可添加 <span id="remainingCount">9</span> 位）' +
+          '</button>' +
+        '</div>' +
+        '<button id="submitBtn" class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition">提交登记</button>';
     }
 
     function renderGuestRow(num) {
-      return `
-        <div class="guest-row flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg" data-num="${num}">
-          <span class="text-gray-400 font-bold text-lg w-6 text-center">${num}</span>
-          <input type="text" placeholder="姓名" class="guest-name flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-          <input type="text" placeholder="职务/Title" class="guest-title flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-          <input type="tel" placeholder="手机号" class="guest-phone flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" maxlength="11">
-          <button class="delete-guest text-red-400 hover:text-red-600 text-xl font-bold w-8 h-8 flex items-center justify-center ${num === 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${num === 1 ? 'disabled' : ''}>×</button>
-        </div>`;
+      var delDisabled = num === 1 ? ' opacity-30 cursor-not-allowed" disabled' : '"';
+      return '' +
+        '<div class="guest-row flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg" data-num="' + num + '">' +
+          '<span class="text-gray-400 font-bold text-lg w-6 text-center">' + num + '</span>' +
+          '<input type="text" placeholder="姓名" class="guest-name flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">' +
+          '<input type="text" placeholder="职务/Title" class="guest-title flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">' +
+          '<input type="tel" placeholder="手机号" class="guest-phone flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" maxlength="11">' +
+          '<button class="delete-guest text-red-400 hover:text-red-600 text-xl font-bold w-8 h-8 flex items-center justify-center' + delDisabled + '>\u00d7</button>' +
+        '</div>';
     }
 
     function renderSessionInfo() {
-      let html = '<div class="bg-white rounded-2xl shadow-sm p-8 mb-6"><h2 class="text-xl font-bold text-gray-800 mb-6"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i>会议场次信息</h2>';
-      EVENT_CARDS.forEach(day => {
-        html += `<div class="mb-6"><h3 class="font-semibold text-gray-700 mb-3"><i class="far fa-calendar mr-1"></i>${day.date}（${day.location}）</h3>`;
-        day.events.forEach(ev => {
-          html += `
-            <div class="session-card" style="border-left-color: ${ev.color}">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <div class="flex items-center gap-3">
-                  <span class="text-2xl">${ev.icon}</span>
-                  <div>
-                    <div class="font-semibold text-gray-800">${ev.name}</div>
-                    <div class="text-sm text-gray-500 mt-1"><i class="far fa-clock mr-1"></i>${ev.time} · ${ev.venue}</div>
-                  </div>
-                </div>
-                <span class="px-3 py-1 rounded-full text-xs font-medium" style="background: ${ev.color}20; color: ${ev.color}">${ev.checkin}</span>
-              </div>
-            </div>`;
+      var html = '<div class="bg-white rounded-2xl shadow-sm p-8 mb-6">' +
+        '<h2 class="text-xl font-bold text-gray-800 mb-6"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i>会议场次信息</h2>';
+      EVENT_CARDS.forEach(function(day) {
+        html += '<div class="mb-6"><h3 class="font-semibold text-gray-700 mb-3"><i class="far fa-calendar mr-1"></i>' + day.date + '（' + day.location + '）</h3>';
+        day.events.forEach(function(ev) {
+          html += '' +
+            '<div class="session-card" style="border-left-color: ' + ev.color + '">' +
+              '<div class="flex items-center justify-between flex-wrap gap-2">' +
+                '<div class="flex items-center gap-3">' +
+                  '<span class="text-2xl">' + ev.icon + '</span>' +
+                  '<div>' +
+                    '<div class="font-semibold text-gray-800">' + ev.name + '</div>' +
+                    '<div class="text-sm text-gray-500 mt-1"><i class="far fa-clock mr-1"></i>' + ev.time + ' · ' + ev.venue + '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<span class="px-3 py-1 rounded-full text-xs font-medium" style="background: ' + ev.color + '20; color: ' + ev.color + '">' + ev.checkin + '</span>' +
+              '</div>' +
+            '</div>';
         });
         html += '</div>';
       });
@@ -304,21 +203,24 @@
     }
 
     function renderMySubmissions() {
-      if (_mySubmissionIds.length === 0) return '';
-      const records = getRecords().filter(r => _mySubmissionIds.includes(r.id));
-      if (records.length === 0) return '';
-      const grouped = {};
-      records.forEach(r => {
-        if (!grouped[r.merchant]) grouped[r.merchant] = [];
-        grouped[r.merchant].push(r);
+      if (_mySubmissions.length === 0) return '';
+      var grouped = {};
+      _mySubmissions.forEach(function(sub) {
+        if (!grouped[sub.merchant]) grouped[sub.merchant] = [];
+        grouped[sub.merchant].push(sub);
       });
-      let html = '<div class="bg-white rounded-2xl shadow-sm p-8 mb-6"><h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-check-circle mr-2 text-green-500"></i>我的提交记录</h2>';
-      Object.entries(grouped).forEach(([merchant, recs]) => {
-        html += `<div class="mb-4 p-4 bg-blue-50 rounded-lg"><h4 class="font-semibold text-blue-800 mb-2">${merchant}</h4>`;
-        html += `<p class="text-xs text-gray-500 mb-2">场次：${(recs[0].sessions || []).join('、')}</p>`;
-        html += '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500"><th class="pb-1">姓名</th><th class="pb-1">职务</th><th class="pb-1">手机号</th></tr></thead><tbody>';
-        recs.forEach(r => {
-          html += `<tr><td class="py-1">${r.guest_name}</td><td>${r.guest_title || '-'}</td><td>${r.phone || '-'}</td></tr>`;
+      var html = '<div class="bg-white rounded-2xl shadow-sm p-8 mb-6">' +
+        '<h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-check-circle mr-2 text-green-500"></i>我的提交记录</h2>';
+      Object.keys(grouped).forEach(function(merchant) {
+        var recs = grouped[merchant];
+        html += '<div class="mb-4 p-4 bg-blue-50 rounded-lg">' +
+          '<h4 class="font-semibold text-blue-800 mb-2">' + merchant + '</h4>' +
+          '<p class="text-xs text-gray-500 mb-2">场次：' + recs[0].sessions + '</p>' +
+          '<p class="text-xs text-gray-400 mb-2">提交时间：' + recs[0].submit_time + '</p>' +
+          '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500">' +
+          '<th class="pb-1">姓名</th><th class="pb-1">职务</th><th class="pb-1">手机号</th></tr></thead><tbody>';
+        recs.forEach(function(r) {
+          html += '<tr><td class="py-1">' + r.guest_name + '</td><td>' + (r.guest_title || '-') + '</td><td>' + (r.phone || '-') + '</td></tr>';
         });
         html += '</tbody></table></div></div>';
       });
@@ -326,72 +228,94 @@
       return html;
     }
 
+    // ==================== FORM EVENTS ====================
     function initFormEvents() {
-      // Province dropdown
-      const provinceInput = document.getElementById('province');
-      const provinceDD = document.getElementById('provinceDropdown');
-      const cityInput = document.getElementById('city');
-      const cityDD = document.getElementById('cityDropdown');
+      var provinceInput = document.getElementById('province');
+      var provinceDD = document.getElementById('provinceDropdown');
+      var cityInput = document.getElementById('city');
+      var cityDD = document.getElementById('cityDropdown');
 
       if (!provinceInput) return;
 
-      provinceInput.addEventListener('focus', () => showDropdown(provinceDD, Object.keys(PROVINCES_CITIES), provinceInput, 'province'));
-      provinceInput.addEventListener('input', () => {
-        const filtered = Object.keys(PROVINCES_CITIES).filter(p => p.includes(provinceInput.value));
+      provinceInput.addEventListener('focus', function() {
+        showDropdown(provinceDD, Object.keys(PROVINCES_CITIES), provinceInput, 'province');
+      });
+      provinceInput.addEventListener('input', function() {
+        var filtered = Object.keys(PROVINCES_CITIES).filter(function(p) {
+          return p.indexOf(provinceInput.value) !== -1;
+        });
         showDropdown(provinceDD, filtered, provinceInput, 'province');
       });
 
-      cityInput.addEventListener('focus', () => {
-        const prov = provinceInput.value;
-        if (PROVINCES_CITIES[prov]) showDropdown(cityDD, PROVINCES_CITIES[prov], cityInput, 'city');
-      });
-      cityInput.addEventListener('input', () => {
-        const prov = provinceInput.value;
+      cityInput.addEventListener('focus', function() {
+        var prov = provinceInput.value;
         if (PROVINCES_CITIES[prov]) {
-          const filtered = PROVINCES_CITIES[prov].filter(c => c.includes(cityInput.value));
+          showDropdown(cityDD, PROVINCES_CITIES[prov], cityInput, 'city');
+        }
+      });
+      cityInput.addEventListener('input', function() {
+        var prov = provinceInput.value;
+        if (PROVINCES_CITIES[prov]) {
+          var filtered = PROVINCES_CITIES[prov].filter(function(c) {
+            return c.indexOf(cityInput.value) !== -1;
+          });
           showDropdown(cityDD, filtered, cityInput, 'city');
         }
       });
 
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('#province') && !e.target.closest('#provinceDropdown')) provinceDD.classList.add('hidden');
-        if (!e.target.closest('#city') && !e.target.closest('#cityDropdown')) cityDD.classList.add('hidden');
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('#province') && !e.target.closest('#provinceDropdown')) {
+          provinceDD.classList.add('hidden');
+        }
+        if (!e.target.closest('#city') && !e.target.closest('#cityDropdown')) {
+          cityDD.classList.add('hidden');
+        }
       });
 
-      // Session tags
-      document.querySelectorAll('.session-tag').forEach(tag => {
-        tag.addEventListener('click', () => tag.classList.toggle('tag-selected'));
+      var tags = document.querySelectorAll('.session-tag');
+      tags.forEach(function(tag) {
+        tag.addEventListener('click', function() {
+          tag.classList.toggle('tag-selected');
+        });
       });
 
-      // Add guest
-      const addBtn = document.getElementById('addGuestBtn');
+      var addBtn = document.getElementById('addGuestBtn');
       if (addBtn) {
-        addBtn.addEventListener('click', () => {
-          const rows = document.querySelectorAll('.guest-row');
-          if (rows.length >= 10) return showToast('最多添加10位嘉宾', 'error');
-          const num = rows.length + 1;
+        addBtn.addEventListener('click', function() {
+          var rows = document.querySelectorAll('.guest-row');
+          if (rows.length >= 10) {
+            showToast('最多添加10位嘉宾', 'error');
+            return;
+          }
+          var num = rows.length + 1;
           document.getElementById('guestRows').insertAdjacentHTML('beforeend', renderGuestRow(num));
           updateGuestControls();
         });
       }
 
-      // Delete guest delegation
-      document.getElementById('guestRows')?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('delete-guest') && !e.target.disabled) {
-          e.target.closest('.guest-row').remove();
-          renumberGuests();
-        }
-      });
+      var guestRowsContainer = document.getElementById('guestRows');
+      if (guestRowsContainer) {
+        guestRowsContainer.addEventListener('click', function(e) {
+          if (e.target.classList.contains('delete-guest') && !e.target.disabled) {
+            e.target.closest('.guest-row').remove();
+            renumberGuests();
+          }
+        });
+      }
 
-      // Submit
-      document.getElementById('submitBtn')?.addEventListener('click', handleSubmit);
+      var submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.addEventListener('click', handleSubmit);
+      }
     }
 
     function showDropdown(dropdown, items, input, type) {
-      dropdown.innerHTML = items.map(item => `<div class="dropdown-item px-4 py-2 cursor-pointer text-sm" data-value="${item}">${item}</div>`).join('');
+      dropdown.innerHTML = items.map(function(item) {
+        return '<div class="dropdown-item px-4 py-2 cursor-pointer text-sm" data-value="' + item + '">' + item + '</div>';
+      }).join('');
       dropdown.classList.remove('hidden');
-      dropdown.querySelectorAll('.dropdown-item').forEach(el => {
-        el.addEventListener('click', () => {
+      dropdown.querySelectorAll('.dropdown-item').forEach(function(el) {
+        el.addEventListener('click', function() {
           input.value = el.dataset.value;
           dropdown.classList.add('hidden');
           if (type === 'province') {
@@ -403,520 +327,121 @@
     }
 
     function updateGuestControls() {
-      const count = document.querySelectorAll('.guest-row').length;
-      const remaining = document.getElementById('remainingCount');
+      var count = document.querySelectorAll('.guest-row').length;
+      var remaining = document.getElementById('remainingCount');
       if (remaining) remaining.textContent = 10 - count;
-      const addBtn = document.getElementById('addGuestBtn');
-      if (addBtn && count >= 10) addBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      else if (addBtn) addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      var addBtn = document.getElementById('addGuestBtn');
+      if (addBtn && count >= 10) {
+        addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else if (addBtn) {
+        addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
     }
 
     function renumberGuests() {
-      document.querySelectorAll('.guest-row').forEach((row, i) => {
+      document.querySelectorAll('.guest-row').forEach(function(row, i) {
         row.dataset.num = i + 1;
         row.querySelector('span').textContent = i + 1;
-        const delBtn = row.querySelector('.delete-guest');
-        if (i === 0) { delBtn.disabled = true; delBtn.classList.add('opacity-30', 'cursor-not-allowed'); }
-        else { delBtn.disabled = false; delBtn.classList.remove('opacity-30', 'cursor-not-allowed'); }
+        var delBtn = row.querySelector('.delete-guest');
+        if (i === 0) {
+          delBtn.disabled = true;
+          delBtn.classList.add('opacity-30', 'cursor-not-allowed');
+        } else {
+          delBtn.disabled = false;
+          delBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+        }
       });
       updateGuestControls();
     }
 
-    async function handleSubmit() {
-      if (_cutoff) return showToast('已截单，无法提交', 'error');
-      const merchant = document.getElementById('merchant').value.trim();
-      const xiaoer = document.getElementById('xiaoer').value.trim();
-      const province = document.getElementById('province').value.trim();
-      const city = document.getElementById('city').value.trim();
-      const selectedSessions = [...document.querySelectorAll('.session-tag.tag-selected')].map(el => el.dataset.value);
+    // ==================== SUBMIT ====================
+    function handleSubmit() {
+      var merchant = document.getElementById('merchant').value.trim();
+      var xiaoer = document.getElementById('xiaoer').value.trim();
+      var province = document.getElementById('province').value.trim();
+      var city = document.getElementById('city').value.trim();
+      var selectedSessions = [];
+      document.querySelectorAll('.session-tag.tag-selected').forEach(function(el) {
+        selectedSessions.push(el.dataset.value);
+      });
 
-      if (!merchant) return showToast('请输入商家名称', 'error');
-      if (!xiaoer) return showToast('请输入对接小二', 'error');
-      if (!province) return showToast('请选择省份', 'error');
-      if (!city) return showToast('请选择城市', 'error');
-      if (selectedSessions.length === 0) return showToast('请选择至少一个参会场次', 'error');
+      if (!merchant) { showToast('请输入商家名称', 'error'); return; }
+      if (!xiaoer) { showToast('请输入对接小二', 'error'); return; }
+      if (!province) { showToast('请选择省份', 'error'); return; }
+      if (!city) { showToast('请选择城市', 'error'); return; }
+      if (selectedSessions.length === 0) { showToast('请选择至少一个参会场次', 'error'); return; }
 
-      const guests = [];
-      let valid = true;
-      document.querySelectorAll('.guest-row').forEach(row => {
-        const name = row.querySelector('.guest-name').value.trim();
-        const title = row.querySelector('.guest-title').value.trim();
-        const phone = row.querySelector('.guest-phone').value.trim();
+      var guests = [];
+      var valid = true;
+      document.querySelectorAll('.guest-row').forEach(function(row) {
+        var name = row.querySelector('.guest-name').value.trim();
+        var title = row.querySelector('.guest-title').value.trim();
+        var phone = row.querySelector('.guest-phone').value.trim();
         if (!name) { valid = false; return; }
         if (!phone || !/^1\d{10}$/.test(phone)) { valid = false; return; }
-        guests.push({ guest_name: name, guest_title: title, phone });
+        guests.push({ guest_name: name, guest_title: title, phone: phone });
       });
-      if (!valid) return showToast('请完整填写嘉宾信息（姓名和正确手机号必填）', 'error');
 
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.textContent = '提交中...';
-
-      const insertedIds = [];
-      try {
-        for (const g of guests) {
-          const record = {
-            merchant, xiaoer, province, city,
-            sessions: selectedSessions,
-            guest_name: g.guest_name,
-            guest_title: g.guest_title,
-            phone: g.phone
-          };
-          const result = await cloudInsert(record);
-          if (result && result[0]) {
-            _recordCache.unshift(result[0]);
-            insertedIds.push(result[0].id);
-          }
-        }
-        _mySubmissionIds = [..._mySubmissionIds, ...insertedIds];
-        localStorage.setItem('mySubmissionIds', JSON.stringify(_mySubmissionIds));
-        localStorage.setItem('recordCache', JSON.stringify(_recordCache));
-        showToast(`成功登记 ${guests.length} 位嘉宾！`);
-        render(document.getElementById('app'));
-      } catch (e) {
-        showToast('提交失败，请重试', 'error');
-        btn.disabled = false;
-        btn.textContent = '提交登记';
-      }
-    }
-
-    // ==================== ADMIN PAGE ====================
-    function renderAdmin(container) {
-      if (!_adminLoggedIn) {
-        renderAdminLogin(container);
+      if (!valid) {
+        showToast('请完整填写嘉宾信息（姓名和正确手机号必填）', 'error');
         return;
       }
-      container.innerHTML = `
-        <div class="min-h-screen bg-gray-50">
-          <nav class="bg-white shadow-sm sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-3">
-              <div class="flex items-center gap-4 flex-wrap">
-                <h1 class="text-lg font-bold text-gray-800"><i class="fas fa-chart-bar mr-2 text-blue-500"></i>双11登记管理后台</h1>
-                <div class="flex bg-gray-100 rounded-lg p-1 text-sm">
-                  <button class="admin-tab px-3 py-1.5 rounded-md bg-white shadow-sm text-blue-600 font-medium" data-tab="overview">数据概览</button>
-                  <button class="admin-tab px-3 py-1.5 rounded-md text-gray-600 hover:bg-gray-200" data-tab="records">全部记录</button>
-                  <button class="admin-tab px-3 py-1.5 rounded-md text-gray-600 hover:bg-gray-200" data-tab="sessions">场次统计</button>
-                  <button class="admin-tab px-3 py-1.5 rounded-md text-gray-600 hover:bg-gray-200" data-tab="settings">系统设置</button>
-                </div>
-              </div>
-              <div class="flex items-center gap-4">
-                <label class="flex items-center gap-2 text-sm cursor-pointer">
-                  <span class="text-gray-600">截单开关</span>
-                  <div class="toggle-wrapper" id="cutoffToggleWrapper">
-                    <input type="checkbox" id="cutoffToggle" class="sr-only" ${_cutoff ? 'checked' : ''}>
-                    <div class="toggle-bg ${_cutoff ? 'bg-red-500' : 'bg-gray-300'}"></div>
-                    <div class="toggle-dot ${_cutoff ? 'translate-x-4' : ''}"></div>
-                  </div>
-                </label>
-                <button id="logoutBtn" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-sign-out-alt mr-1"></i>退出</button>
-                <a href="#/" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-arrow-left mr-1"></i>返回表单</a>
-              </div>
-            </div>
-          </nav>
-          <div class="max-w-7xl mx-auto px-4 py-6" id="adminContent"></div>
-        </div>`;
-      initAdminEvents();
-      switchAdminTab('overview');
-    }
 
-    function renderAdminLogin(container) {
-      container.innerHTML = `
-        <div class="min-h-screen flex items-center justify-center bg-gray-100">
-          <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
-            <h2 class="text-xl font-bold text-center text-gray-800 mb-6"><i class="fas fa-lock mr-2 text-blue-500"></i>管理后台登录</h2>
-            <input id="adminPwd" type="password" placeholder="请输入管理密码" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button id="loginBtn" class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg">登录</button>
-            <a href="#/" class="block text-center text-sm text-gray-400 mt-4 hover:text-gray-600">← 返回登记表</a>
-          </div>
-        </div>`;
-      document.getElementById('loginBtn').addEventListener('click', () => {
-        const pwd = document.getElementById('adminPwd').value;
-        const stored = localStorage.getItem('adminPassword') || 'shuang11admin';
-        if (pwd === stored) {
-          _adminLoggedIn = true;
-          loadFromCloud().then(() => render(document.getElementById('app')));
-        } else {
-          showToast('密码错误', 'error');
-        }
-      });
-      document.getElementById('adminPwd').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') document.getElementById('loginBtn').click();
-      });
-    }
+      var sessionsStr = selectedSessions.join(', ');
+      var submitTime = getNowStr();
 
-    function initAdminEvents() {
-      document.querySelectorAll('.admin-tab').forEach(btn => {
-        btn.addEventListener('click', () => switchAdminTab(btn.dataset.tab));
-      });
-      document.getElementById('cutoffToggleWrapper')?.addEventListener('click', () => {
-        const input = document.getElementById('cutoffToggle');
-        input.checked = !input.checked;
-        _cutoff = input.checked;
-        localStorage.setItem('cutoffConfig', JSON.stringify(_cutoff));
-        showToast(_cutoff ? '已开启截单' : '已关闭截单');
-        const bg = input.parentElement.querySelector('.toggle-bg');
-        const dot = input.parentElement.querySelector('.toggle-dot');
-        if (_cutoff) { bg.classList.replace('bg-gray-300', 'bg-red-500'); dot.classList.add('translate-x-4'); }
-        else { bg.classList.replace('bg-red-500', 'bg-gray-300'); dot.classList.remove('translate-x-4'); }
-      });
-      document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        _adminLoggedIn = false;
-        render(document.getElementById('app'));
-      });
-    }
-
-    function switchAdminTab(tab) {
-      document.querySelectorAll('.admin-tab').forEach(btn => {
-        btn.classList.remove('bg-white', 'shadow-sm', 'text-blue-600', 'font-medium');
-        btn.classList.add('text-gray-600');
-        if (btn.dataset.tab === tab) {
-          btn.classList.add('bg-white', 'shadow-sm', 'text-blue-600', 'font-medium');
-          btn.classList.remove('text-gray-600');
-        }
-      });
-      const content = document.getElementById('adminContent');
-      if (tab === 'overview') renderOverview(content);
-      else if (tab === 'records') renderRecords(content);
-      else if (tab === 'sessions') renderSessionStats(content);
-      else if (tab === 'settings') renderSettings(content);
-    }
-
-    // ---- Overview ----
-    function renderOverview(container) {
-      const records = getRecords();
-      const merchants = new Set(records.map(r => r.merchant));
-      const today = new Date().toISOString().split('T')[0];
-      const todayCount = records.filter(r => r.created_at && r.created_at.startsWith(today)).length;
-      const sessionsCount = new Set(records.flatMap(r => r.sessions || [])).size;
-
-      container.innerHTML = `
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-xl p-5 shadow-sm"><div class="text-sm text-gray-500">总提交商家数</div><div class="text-3xl font-bold text-blue-600 mt-1">${merchants.size}</div></div>
-          <div class="bg-white rounded-xl p-5 shadow-sm"><div class="text-sm text-gray-500">总登记嘉宾数</div><div class="text-3xl font-bold text-green-600 mt-1">${records.length}</div></div>
-          <div class="bg-white rounded-xl p-5 shadow-sm"><div class="text-sm text-gray-500">总场次数</div><div class="text-3xl font-bold text-purple-600 mt-1">${sessionsCount}</div></div>
-          <div class="bg-white rounded-xl p-5 shadow-sm"><div class="text-sm text-gray-500">今日新增</div><div class="text-3xl font-bold text-orange-600 mt-1">${todayCount}</div></div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl p-6 shadow-sm"><h3 class="font-semibold text-gray-700 mb-4">各场次登记人数</h3><canvas id="sessionChart"></canvas></div>
-          <div class="bg-white rounded-xl p-6 shadow-sm"><h3 class="font-semibold text-gray-700 mb-4">省份分布</h3><canvas id="provinceChart"></canvas></div>
-        </div>`;
-      setTimeout(() => { renderSessionChart(); renderProvinceChart(); }, 100);
-    }
-
-    function renderSessionChart() {
-      const records = getRecords();
-      const counts = {};
-      SESSIONS_LIST.forEach(s => counts[s] = 0);
-      records.forEach(r => (r.sessions || []).forEach(s => { if (counts[s] !== undefined) counts[s]++; }));
-      if (charts.session) charts.session.destroy();
-      const ctx = document.getElementById('sessionChart');
-      if (!ctx) return;
-      charts.session = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: SESSIONS_LIST.map(s => s.split(' ')[0]),
-          datasets: [{ label: '登记人数', data: Object.values(counts), backgroundColor: '#1677FF', borderRadius: 6 }]
-        },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-      });
-    }
-
-    function renderProvinceChart() {
-      const records = getRecords();
-      const counts = {};
-      records.forEach(r => { if (r.province) counts[r.province] = (counts[r.province] || 0) + 1; });
-      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
-      if (charts.province) charts.province.destroy();
-      const ctx = document.getElementById('provinceChart');
-      if (!ctx) return;
-      const colors = ['#1677FF', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96', '#13C2C2', '#F5222D', '#FAAD14'];
-      charts.province = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: sorted.map(s => s[0]),
-          datasets: [{ data: sorted.map(s => s[1]), backgroundColor: colors }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'right' } } }
-      });
-    }
-
-    // ---- Records ----
-    function renderRecords(container) {
-      const records = getFilteredRecords();
-      const totalPages = Math.ceil(records.length / 20) || 1;
-      if (recordsPage > totalPages) recordsPage = totalPages;
-      const start = (recordsPage - 1) * 20;
-      const pageRecords = records.slice(start, start + 20);
-
-      container.innerHTML = `
-        <div class="bg-white rounded-xl shadow-sm p-6">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div class="flex gap-3 flex-1 flex-wrap">
-              <input id="searchInput" type="text" placeholder="搜索商家/姓名/手机号..." value="${recordsFilter.search}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm w-60 focus:ring-2 focus:ring-blue-500 outline-none">
-              <select id="sessionFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                <option value="">全部场次</option>
-                ${SESSIONS_LIST.map(s => `<option value="${s}" ${recordsFilter.session === s ? 'selected' : ''}>${s}</option>`).join('')}
-              </select>
-            </div>
-            <div class="flex gap-2">
-              <button id="exportBtn" class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600"><i class="fas fa-file-excel mr-1"></i>导出Excel</button>
-              <button id="addRecordBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"><i class="fas fa-plus mr-1"></i>添加记录</button>
-            </div>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead><tr class="text-left text-gray-500 border-b">
-                <th class="py-3 px-2">#</th><th class="px-2">商家</th><th class="px-2">嘉宾姓名</th><th class="px-2">职务</th><th class="px-2">小二</th><th class="px-2">省</th><th class="px-2">市</th><th class="px-2">手机号</th><th class="px-2">参会场次</th><th class="px-2">提交时间</th><th class="px-2">操作</th>
-              </tr></thead>
-              <tbody>
-                ${pageRecords.length === 0 ? '<tr><td colspan="11" class="text-center py-8 text-gray-400">暂无数据</td></tr>' : ''}
-                ${pageRecords.map((r, i) => `<tr class="border-b hover:bg-gray-50">
-                  <td class="py-3 px-2 text-gray-400">${start + i + 1}</td>
-                  <td class="px-2 font-medium">${r.merchant || ''}</td>
-                  <td class="px-2">${r.guest_name || ''}</td>
-                  <td class="px-2 text-gray-500">${r.guest_title || '-'}</td>
-                  <td class="px-2">${r.xiaoer || ''}</td>
-                  <td class="px-2">${r.province || ''}</td>
-                  <td class="px-2">${r.city || ''}</td>
-                  <td class="px-2">${r.phone || '-'}</td>
-                  <td class="px-2"><div class="flex flex-wrap gap-1 max-w-48">${(r.sessions || []).map(s => `<span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs whitespace-nowrap">${s}</span>`).join('')}</div></td>
-                  <td class="px-2 text-gray-400 text-xs whitespace-nowrap">${formatDate(r.created_at)}</td>
-                  <td class="px-2"><button class="delete-record text-red-400 hover:text-red-600 text-xs" data-id="${r.id}">删除</button></td>
-                </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-          <div class="flex items-center justify-between mt-4">
-            <span class="text-sm text-gray-500">共 ${records.length} 条记录</span>
-            <div class="flex gap-2">
-              <button id="prevPage" class="px-3 py-1 border rounded text-sm ${recordsPage <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}" ${recordsPage <= 1 ? 'disabled' : ''}>上一页</button>
-              <span class="px-3 py-1 text-sm text-gray-600">${recordsPage} / ${totalPages}</span>
-              <button id="nextPage" class="px-3 py-1 border rounded text-sm ${recordsPage >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}" ${recordsPage >= totalPages ? 'disabled' : ''}>下一页</button>
-            </div>
-          </div>
-        </div>`;
-
-      document.getElementById('searchInput').addEventListener('input', (e) => { recordsFilter.search = e.target.value; recordsPage = 1; renderRecords(container); });
-      document.getElementById('sessionFilter').addEventListener('change', (e) => { recordsFilter.session = e.target.value; recordsPage = 1; renderRecords(container); });
-      document.getElementById('prevPage')?.addEventListener('click', () => { if (recordsPage > 1) { recordsPage--; renderRecords(container); } });
-      document.getElementById('nextPage')?.addEventListener('click', () => { const tp = Math.ceil(getFilteredRecords().length / 20) || 1; if (recordsPage < tp) { recordsPage++; renderRecords(container); } });
-      document.getElementById('exportBtn').addEventListener('click', exportExcel);
-      document.getElementById('addRecordBtn').addEventListener('click', () => showAddRecordModal(container));
-      document.querySelectorAll('.delete-record').forEach(btn => {
-        btn.addEventListener('click', () => {
-          showConfirm('确定删除此记录？', async () => {
-            await cloudDelete(btn.dataset.id);
-            _recordCache = _recordCache.filter(r => String(r.id) !== String(btn.dataset.id));
-            localStorage.setItem('recordCache', JSON.stringify(_recordCache));
-            showToast('已删除');
-            renderRecords(container);
-          });
-        });
-      });
-    }
-
-    function getFilteredRecords() {
-      let records = getRecords();
-      if (recordsFilter.search) {
-        const q = recordsFilter.search.toLowerCase();
-        records = records.filter(r => (r.merchant || '').toLowerCase().includes(q) || (r.guest_name || '').toLowerCase().includes(q) || (r.phone || '').includes(q));
-      }
-      if (recordsFilter.session) {
-        records = records.filter(r => (r.sessions || []).includes(recordsFilter.session));
-      }
-      return records;
-    }
-
-    function exportExcel() {
-      const records = getFilteredRecords();
-      const data = records.map((r, i) => ({
-        '#': i + 1, '商家': r.merchant || '', '嘉宾姓名': r.guest_name || '', '职务': r.guest_title || '', '小二': r.xiaoer || '',
-        '省': r.province || '', '市': r.city || '', '手机号': r.phone || '', '参会场次': (r.sessions || []).join('、'),
-        '提交时间': r.created_at ? new Date(r.created_at).toLocaleString('zh-CN') : ''
-      }));
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, '登记记录');
-      XLSX.writeFile(wb, `双11登记_${new Date().toLocaleDateString('zh-CN')}.xlsx`);
-      showToast('导出成功');
-    }
-
-    function showAddRecordModal(container) {
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      overlay.innerHTML = `
-        <div class="bg-white rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-          <h3 class="text-lg font-bold mb-4">添加记录</h3>
-          <div class="space-y-3">
-            <input id="modalMerchant" placeholder="商家名称 *" class="w-full px-3 py-2 border rounded-lg text-sm">
-            <input id="modalXiaoer" placeholder="对接小二" class="w-full px-3 py-2 border rounded-lg text-sm">
-            <div class="grid grid-cols-2 gap-3">
-              <input id="modalProvince" placeholder="省份" class="px-3 py-2 border rounded-lg text-sm">
-              <input id="modalCity" placeholder="城市" class="px-3 py-2 border rounded-lg text-sm">
-            </div>
-            <input id="modalGuestName" placeholder="嘉宾姓名 *" class="w-full px-3 py-2 border rounded-lg text-sm">
-            <input id="modalGuestTitle" placeholder="职务" class="w-full px-3 py-2 border rounded-lg text-sm">
-            <input id="modalPhone" placeholder="手机号" class="w-full px-3 py-2 border rounded-lg text-sm">
-            <div>
-              <label class="text-sm text-gray-600 mb-1 block">参会场次</label>
-              <div id="modalSessions" class="flex flex-wrap gap-2">
-                ${SESSIONS_LIST.map(s => `<span class="modal-session-tag px-2 py-1 border rounded-full text-xs cursor-pointer hover:border-blue-400" data-value="${s}">${s}</span>`).join('')}
-              </div>
-            </div>
-          </div>
-          <div class="flex gap-3 mt-6">
-            <button id="modalCancel" class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg">取消</button>
-            <button id="modalSave" class="flex-1 py-2 bg-blue-500 text-white rounded-lg">保存</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-
-      overlay.querySelectorAll('.modal-session-tag').forEach(tag => {
-        tag.addEventListener('click', () => tag.classList.toggle('tag-selected'));
-      });
-      overlay.querySelector('#modalCancel').onclick = () => overlay.remove();
-      overlay.querySelector('#modalSave').onclick = async () => {
-        const sessions = [...overlay.querySelectorAll('.modal-session-tag.tag-selected')].map(el => el.dataset.value);
-        const record = {
-          merchant: overlay.querySelector('#modalMerchant').value.trim(),
-          xiaoer: overlay.querySelector('#modalXiaoer').value.trim(),
-          province: overlay.querySelector('#modalProvince').value.trim(),
-          city: overlay.querySelector('#modalCity').value.trim(),
-          guest_name: overlay.querySelector('#modalGuestName').value.trim(),
-          guest_title: overlay.querySelector('#modalGuestTitle').value.trim(),
-          phone: overlay.querySelector('#modalPhone').value.trim(),
-          sessions
+      // Fire-and-forget: send one POST per guest row
+      guests.forEach(function(g) {
+        var payload = {
+          merchant: merchant,
+          xiaoer: xiaoer,
+          province: province,
+          city: city,
+          sessions: sessionsStr,
+          guest_name: g.guest_name,
+          guest_title: g.guest_title,
+          phone: g.phone,
+          submit_time: submitTime
         };
-        if (!record.merchant || !record.guest_name) return showToast('商家名称和嘉宾姓名必填', 'error');
-        const result = await cloudInsert(record);
-        if (result && result[0]) { _recordCache.unshift(result[0]); }
-        localStorage.setItem('recordCache', JSON.stringify(_recordCache));
-        overlay.remove();
-        showToast('添加成功');
-        renderRecords(container);
-      };
-    }
-
-    // ---- Session Stats ----
-    function renderSessionStats(container) {
-      const records = getRecords();
-      const sessionData = {};
-      SESSIONS_LIST.forEach(s => sessionData[s] = { people: [], merchants: new Set() });
-      records.forEach(r => {
-        (r.sessions || []).forEach(s => {
-          if (sessionData[s]) {
-            sessionData[s].people.push(r);
-            sessionData[s].merchants.add(r.merchant);
-          }
-        });
-      });
-
-      const sessionColors = ['#1677FF', '#EB2F96', '#FA8C16', '#13C2C2', '#52C41A', '#722ED1'];
-
-      container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${SESSIONS_LIST.map((s, idx) => {
-            const d = sessionData[s];
-            const color = sessionColors[idx] || '#1677FF';
-            return `
-              <div class="bg-white rounded-xl shadow-sm p-6 border-t-4" style="border-top-color: ${color}">
-                <h3 class="font-semibold text-gray-800 mb-3">${s}</h3>
-                <div class="flex gap-6 mb-4">
-                  <div class="text-center"><div class="text-3xl font-bold" style="color: ${color}">${d.people.length}</div><div class="text-xs text-gray-500">登记人数</div></div>
-                  <div class="text-center"><div class="text-3xl font-bold text-green-600">${d.merchants.size}</div><div class="text-xs text-gray-500">商家数</div></div>
-                </div>
-                <div class="border-t pt-3">
-                  <div class="text-xs text-gray-500 mb-2">参会商家：</div>
-                  <div class="text-xs text-gray-600 max-h-32 overflow-y-auto">
-                    ${d.merchants.size === 0 ? '<span class="text-gray-400">暂无</span>' : [...d.merchants].map(m => `<span class="inline-block px-2 py-0.5 bg-gray-100 rounded mr-1 mb-1">${m}</span>`).join('')}
-                  </div>
-                </div>
-              </div>`;
-          }).join('')}
-        </div>`;
-    }
-
-    // ---- Settings ----
-    function renderSettings(container) {
-      container.innerHTML = `
-        <div class="max-w-xl mx-auto space-y-6">
-          <div class="bg-white rounded-xl shadow-sm p-6">
-            <h3 class="font-semibold text-gray-800 mb-4"><i class="fas fa-key mr-2 text-yellow-500"></i>修改密码</h3>
-            <div class="flex gap-3">
-              <input id="newPwd" type="password" placeholder="新密码" class="flex-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-              <button id="changePwdBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">保存</button>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow-sm p-6">
-            <h3 class="font-semibold text-gray-800 mb-4"><i class="fas fa-database mr-2 text-green-500"></i>数据备份</h3>
-            <div class="flex gap-3 flex-wrap">
-              <button id="exportJsonBtn" class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600"><i class="fas fa-download mr-1"></i>导出JSON</button>
-              <label class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm cursor-pointer hover:bg-blue-600"><i class="fas fa-upload mr-1"></i>导入JSON<input type="file" id="importJson" accept=".json" class="hidden"></label>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-red-100">
-            <h3 class="font-semibold text-red-500 mb-4"><i class="fas fa-exclamation-triangle mr-2"></i>危险操作</h3>
-            <p class="text-sm text-gray-500 mb-3">清空所有记录将从数据库中永久删除所有数据，此操作不可撤销。</p>
-            <button id="clearAllBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"><i class="fas fa-trash mr-1"></i>清空所有记录</button>
-          </div>
-        </div>`;
-
-      document.getElementById('changePwdBtn').addEventListener('click', () => {
-        const pwd = document.getElementById('newPwd').value.trim();
-        if (!pwd) return showToast('请输入新密码', 'error');
-        localStorage.setItem('adminPassword', pwd);
-        showToast('密码已更新');
-      });
-
-      document.getElementById('exportJsonBtn').addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify(getRecords(), null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `registrations_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click(); URL.revokeObjectURL(url);
-        showToast('导出成功');
-      });
-
-      document.getElementById('importJson').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const text = await file.text();
         try {
-          const data = JSON.parse(text);
-          if (!Array.isArray(data)) throw new Error('Invalid format');
-          let count = 0;
-          for (const record of data) {
-            const { id, created_at, updated_at, ...rest } = record;
-            const result = await cloudInsert(rest);
-            if (result) count++;
-          }
-          await loadFromCloud();
-          showToast(`成功导入 ${count} 条记录`);
-          switchAdminTab('overview');
-        } catch (err) {
-          showToast('导入失败: ' + err.message, 'error');
-        }
+          fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            mode: 'no-cors'
+          }).catch(function() {});
+        } catch (e) { /* silent */ }
       });
 
-      document.getElementById('clearAllBtn').addEventListener('click', () => {
-        showConfirm('确定清空所有记录？此操作不可撤销！', async () => {
-          const records = getRecords();
-          for (const r of records) { await cloudDelete(r.id); }
-          _recordCache = [];
-          localStorage.setItem('recordCache', '[]');
-          showToast('已清空所有记录');
-          switchAdminTab('overview');
-        });
+      // Save to localStorage for "my submissions" tracking
+      var newEntries = guests.map(function(g) {
+        return {
+          merchant: merchant,
+          xiaoer: xiaoer,
+          province: province,
+          city: city,
+          sessions: sessionsStr,
+          guest_name: g.guest_name,
+          guest_title: g.guest_title,
+          phone: g.phone,
+          submit_time: submitTime
+        };
       });
+
+      _mySubmissions = _mySubmissions.concat(newEntries);
+      localStorage.setItem('mySubmissions', JSON.stringify(_mySubmissions));
+
+      showToast('成功登记 ' + guests.length + ' 位嘉宾！');
+
+      // Re-render to show updated submissions
+      render();
     }
 
     // ==================== INIT ====================
-    async function startApp() {
-      await loadFromCloud();
+    function startApp() {
       render();
     }
     window.addEventListener('DOMContentLoaded', startApp);
-    window.addEventListener('hashchange', render);
   </script>
 </body>
 </html>
