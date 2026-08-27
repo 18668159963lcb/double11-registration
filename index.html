@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2026双11大会 · 大客商家参会登记</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
@@ -27,12 +24,18 @@
 <body class="bg-gray-100 min-h-screen">
   <div id="app"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+
   <script>
-    console.log('=== Script starting ===');
     // ==================== SUPABASE CONFIG ====================
     const SUPABASE_URL = 'https://fvvpyciwiakliqssbxqg.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2dnB5Y2l3aWFrbGlxc3NieHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjI2MjUsImV4cCI6MjEwMzMzODYyNX0.E29_0vNuM2qD7SdRfLuGTAfQpy_v6jwa9ksgflBoBdg';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function getSbClient() {
+      return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
 
     // ==================== DATA CONSTANTS ====================
     const SESSIONS_LIST = [
@@ -109,13 +112,13 @@
     // ==================== CLOUD OPS ====================
     async function loadFromCloud() {
       try {
-        const { data, error } = await supabase.from('registrations').select('*').order('created_at', { ascending: false });
+        const sbClient = getSbClient();
+        const { data, error } = await sbClient.from('registrations').select('*').order('created_at', { ascending: false });
         if (error) throw error;
         _recordCache = data || [];
         localStorage.setItem('recordCache', JSON.stringify(_recordCache));
         return _recordCache;
       } catch (e) {
-        console.error('Cloud load failed:', e);
         _recordCache = JSON.parse(localStorage.getItem('recordCache') || '[]');
         return _recordCache;
       }
@@ -125,24 +128,27 @@
 
     async function cloudInsert(record) {
       try {
-        const { data, error } = await supabase.from('registrations').insert(record).select();
+        const sbClient = getSbClient();
+        const { data, error } = await sbClient.from('registrations').insert(record).select();
         if (error) throw error;
         return data;
-      } catch (e) { console.error('Insert failed:', e); }
+      } catch (e) { /* silent */ }
     }
 
     async function cloudUpdate(id, updates) {
       try {
-        const { error } = await supabase.from('registrations').update(updates).eq('id', id);
+        const sbClient = getSbClient();
+        const { error } = await sbClient.from('registrations').update(updates).eq('id', id);
         if (error) throw error;
-      } catch (e) { console.error('Update failed:', e); }
+      } catch (e) { /* silent */ }
     }
 
     async function cloudDelete(id) {
       try {
-        const { error } = await supabase.from('registrations').delete().eq('id', id);
+        const sbClient = getSbClient();
+        const { error } = await sbClient.from('registrations').delete().eq('id', id);
         if (error) throw error;
-      } catch (e) { console.error('Delete failed:', e); }
+      } catch (e) { /* silent */ }
     }
 
     // ==================== UTILS ====================
@@ -184,8 +190,6 @@
     function navigate(route) {
       window.location.hash = route === 'admin' ? '#/admin' : '#/';
     }
-
-    window.addEventListener('hashchange', render);
 
     // ==================== RENDER ====================
     function render() {
@@ -907,21 +911,11 @@
     }
 
     // ==================== INIT ====================
-    console.log('=== Init section reached ===');
     async function startApp() {
-      console.log('=== startApp called ===');
       await loadFromCloud();
-      console.log('=== Cloud loaded, rendering ===');
       render();
-      console.log('=== Render complete, app length: ' + document.getElementById('app').innerHTML.length + ' ===');
     }
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      console.log('=== DOM ready, starting app ===');
-      startApp();
-    } else {
-      console.log('=== Waiting for DOMContentLoaded ===');
-      window.addEventListener('DOMContentLoaded', startApp);
-    }
+    window.addEventListener('DOMContentLoaded', startApp);
     window.addEventListener('hashchange', render);
   </script>
 </body>
