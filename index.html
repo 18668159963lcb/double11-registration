@@ -906,10 +906,16 @@
     }
 
     // ==================== INIT ====================
-    (async function init() {
+    async function startApp() {
       await loadFromCloud();
       render();
-    })();
+    }
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      startApp();
+    } else {
+      window.addEventListener('DOMContentLoaded', startApp);
+    }
+    window.addEventListener('hashchange', render);
   </script>
 </body>
 </html>
