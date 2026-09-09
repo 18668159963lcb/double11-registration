@@ -37,28 +37,10 @@
       return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     }
 
-    // ==================== WEBHOOK CONFIG ====================
-    const WEBHOOK_URL = 'https://connector.dingtalk.com/webhook/flow/103b11ba76342103e3c4000w';
-
-    function postToWebhook(record) {
-      if (!WEBHOOK_URL) return;
-      fetch(WEBHOOK_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          merchant: record.merchant,
-          xiaoer: record.xiaoer,
-          province: record.province,
-          city: record.city,
-          sessions: Array.isArray(record.sessions) ? record.sessions.join(', ') : record.sessions,
-          guest_name: record.guest_name,
-          guest_title: record.guest_title,
-          phone: record.phone,
-          submit_time: new Date().toLocaleString('zh-CN', { hour12: false })
-        })
-      }).catch(() => {});
-    }
+    // ==================== DINGTALK AI TABLE WEBHOOK ====================
+    // 把钉钉AI表格的 webhook 地址填到这里，表单提交时会同步写入钉钉AI表格（每位嘉宾一行）
+    // 双写模式：Supabase 云数据库（管理后台用）+ 钉钉AI表格（webhook 同步）
+    const WEBHOOK_URL = 'PASTE_YOUR_WEBHOOK_URL_HERE';
 
     // ==================== DATA CONSTANTS ====================
     const SESSIONS_LIST = [
@@ -171,6 +153,33 @@
         const sbClient = getSbClient();
         const { error } = await sbClient.from('registrations').delete().eq('id', id);
         if (error) throw error;
+      } catch (e) { /* silent */ }
+    }
+
+    // 同步写入钉钉AI表格（fire-and-forget，不阻塞表单提交）
+    function sendToWebhook(record) {
+      if (!WEBHOOK_URL || WEBHOOK_URL === 'PASTE_YOUR_WEBHOOK_URL_HERE') return;
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const submitTime = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+      const payload = {
+        merchant: record.merchant,
+        xiaoer: record.xiaoer,
+        province: record.province,
+        city: record.city,
+        sessions: Array.isArray(record.sessions) ? record.sessions.join(', ') : (record.sessions || ''),
+        guest_name: record.guest_name,
+        guest_title: record.guest_title,
+        phone: record.phone,
+        submit_time: submitTime
+      };
+      try {
+        fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          mode: 'no-cors'
+        }).catch(function() { /* silent */ });
       } catch (e) { /* silent */ }
     }
 
@@ -485,12 +494,14 @@
             guest_title: g.guest_title,
             phone: g.phone
           };
+          // 双写：Supabase 云数据库（管理后台/导出用）
           const result = await cloudInsert(record);
           if (result && result[0]) {
             _recordCache.unshift(result[0]);
             insertedIds.push(result[0].id);
           }
-          postToWebhook(record);
+          // 双写：钉钉AI表格（webhook 同步，fire-and-forget）
+          sendToWebhook(record);
         }
         _mySubmissionIds = [..._mySubmissionIds, ...insertedIds];
         localStorage.setItem('mySubmissionIds', JSON.stringify(_mySubmissionIds));
@@ -878,6 +889,11 @@
               <label class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm cursor-pointer hover:bg-blue-600"><i class="fas fa-upload mr-1"></i>导入JSON<input type="file" id="importJson" accept=".json" class="hidden"></label>
             </div>
           </div>
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="font-semibold text-gray-800 mb-4"><i class="fas fa-paper-plane mr-2 text-blue-500"></i>钉钉AI表格同步</h3>
+            <p class="text-sm text-gray-500 mb-3">表单提交时双写：Supabase 云数据库（本后台）+ 钉钉AI表格（Webhook 自动化，每位嘉宾一行）。</p>
+            <div id="webhookStatus" class="text-sm font-medium"></div>
+          </div>
           <div class="bg-white rounded-xl shadow-sm p-6 border border-red-100">
             <h3 class="font-semibold text-red-500 mb-4"><i class="fas fa-exclamation-triangle mr-2"></i>危险操作</h3>
             <p class="text-sm text-gray-500 mb-3">清空所有记录将从数据库中永久删除所有数据，此操作不可撤销。</p>
@@ -891,6 +907,16 @@
         localStorage.setItem('adminPassword', pwd);
         showToast('密码已更新');
       });
+
+      // Webhook 同步状态显示
+      const hookStatus = document.getElementById('webhookStatus');
+      if (hookStatus) {
+        if (WEBHOOK_URL && WEBHOOK_URL !== 'PASTE_YOUR_WEBHOOK_URL_HERE') {
+          hookStatus.innerHTML = '<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>已启用 · ' + WEBHOOK_URL.substring(0, 60) + '...</span>';
+        } else {
+          hookStatus.innerHTML = '<span class="text-orange-500"><i class="fas fa-exclamation-circle mr-1"></i>未配置 · 数据仅写入 Supabase，不同步钉钉AI表格（需在代码中填写 WEBHOOK_URL）</span>';
+        }
+      }
 
       document.getElementById('exportJsonBtn').addEventListener('click', () => {
         const blob = new Blob([JSON.stringify(getRecords(), null, 2)], { type: 'application/json' });
